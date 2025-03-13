@@ -1,4 +1,4 @@
-# Sequoia Engine
+# Pine Engine
 
 Made for forests of lush pine. 🌿
 
