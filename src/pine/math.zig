@@ -19,15 +19,19 @@ pub const Vec2 = extern struct {
 };
 
 pub const Vec3 = extern struct {
-    x: f32,
-    y: f32,
-    z: f32,
+    x: f32 = 0,
+    y: f32 = 0,
+    z: f32 = 0,
 
-    pub fn zero() Vec3 {
+    pub fn zeros() Vec3 {
         return Vec3{ .x = 0.0, .y = 0.0, .z = 0.0 };
     }
 
-    pub fn init(x: f32, y: f32, z: f32) Vec3 {
+    pub fn ones() Vec3 {
+        return Vec3{ .x = 1.0, .y = 1.0, .z = 1.0 };
+    }
+
+    pub fn with(x: f32, y: f32, z: f32) Vec3 {
         return Vec3{ .x = x, .y = y, .z = z };
     }
 
@@ -56,7 +60,7 @@ pub const Vec3 = extern struct {
         if (l != 0.0) {
             return Vec3{ .x = v.x / l, .y = v.y / l, .z = v.z / l };
         } else {
-            return Vec3.zero();
+            return Vec3.zeros();
         }
     }
 
@@ -189,12 +193,12 @@ pub const Mat4 = extern struct {
 };
 
 test "Vec3.zero" {
-    const v = Vec3.zero();
+    const v = Vec3.zeros();
     assert(v.x == 0.0 and v.y == 0.0 and v.z == 0.0);
 }
 
 test "Vec3.new" {
-    const v = Vec3.init(1.0, 2.0, 3.0);
+    const v = Vec3.with(1.0, 2.0, 3.0);
     assert(v.x == 1.0 and v.y == 2.0 and v.z == 3.0);
 }
 
@@ -256,7 +260,7 @@ test "Mat4.persp" {
 }
 
 test "Mat4.lookat" {
-    const m = Mat4.lookat(.{ .x = 0.0, .y = 1.5, .z = 6.0 }, Vec3.zero(), Vec3.up());
+    const m = Mat4.lookat(.{ .x = 0.0, .y = 1.5, .z = 6.0 }, Vec3.zeros(), Vec3.up());
 
     assert(eq(m.m[0][0], 1.0));
     assert(eq(m.m[0][1], 0.0));
