@@ -12,7 +12,5 @@ pub fn log_fn(
 
     // consistent prefix with level and scope
     const prefix = "[" ++ comptime message_level.asText() ++ "] (" ++ @tagName(scope) ++ "): ";
-
-    // print the message with the prefix
     nosuspend stderr.print(prefix ++ format ++ "\n", args) catch return;
 }

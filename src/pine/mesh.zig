@@ -7,6 +7,7 @@ pub const Mesh = struct {
     indices: []const u16,
     vbuf: sokol.gfx.Buffer,
     ibuf: sokol.gfx.Buffer,
+    bindings: sokol.gfx.Bindings,
     label: []const u8,
     label_vbuf: []const u8,
     label_ibuf: []const u8,
@@ -47,12 +48,20 @@ pub const Mesh = struct {
         });
         errdefer sokol.gfx.destroyBuffer(ibuf);
 
+        const bindings = blk: {
+            var b = sokol.gfx.Bindings{};
+            b.vertex_buffers[0] = vbuf;
+            b.index_buffer = ibuf;
+            break :blk b;
+        };
+
         return .{
             .allocator = allocator,
             .vertices = v_copy,
             .indices = i_copy,
             .vbuf = vbuf,
             .ibuf = ibuf,
+            .bindings = bindings,
             .label = label_prefix,
             .label_vbuf = label_vbuf,
             .label_ibuf = label_ibuf,

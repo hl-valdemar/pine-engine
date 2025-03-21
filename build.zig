@@ -122,4 +122,34 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_exe_unit_tests.step);
+
+    // CUBE EXAMPLE
+
+    const exe_cube_mod = b.createModule(.{
+        .root_source_file = b.path("src/examples/cube/cube.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    exe_cube_mod.addImport("pine", lib_mod);
+    exe_cube_mod.addImport("sokol", dep_sokol.module("sokol"));
+
+    const exe_cube = b.addExecutable(.{
+        .name = "cube_example",
+        .root_module = exe_cube_mod,
+    });
+
+    b.installArtifact(exe_cube);
+
+    const run_cmd_cube = b.addRunArtifact(exe_cube);
+    run_cmd_cube.step.dependOn(b.getInstallStep());
+
+    // This allows the user to pass arguments to the application in the build
+    // command itself, like this: `zig build run -- arg1 arg2 etc`
+    if (b.args) |args| {
+        run_cmd_cube.addArgs(args);
+    }
+
+    const run_step_cube = b.step("cube", "Run the cube example");
+    run_step_cube.dependOn(&run_cmd_cube.step);
 }

@@ -114,7 +114,7 @@ pub const ResourceManager = struct {
     pub fn destroyShader(
         self: *ResourceManager,
         label: []const u8,
-    ) void {
+    ) bool {
         if (self.shaders.fetchRemove(label)) |entry| {
             entry.value.deinit();
             return true;
@@ -135,13 +135,11 @@ pub const ResourceManager = struct {
         self: *ResourceManager,
         label: []const u8,
         shader_label: []const u8,
-        transform_label: []const u8,
     ) !void {
         try self.materials.put(label, try Material.init(
             self.allocator,
             label,
             shader_label,
-            transform_label,
         ));
     }
 

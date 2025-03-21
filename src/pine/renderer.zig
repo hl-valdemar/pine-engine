@@ -12,6 +12,14 @@ const math = @import("math.zig");
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 
+pub const UniformSlots = struct {
+    pub const MODEL_VIEW_PROJECTION = 0;
+};
+
+const RenderError = error{
+    MissingShader,
+};
+
 pub const Renderer = struct {
     allocator: std.mem.Allocator,
     render_queue: std.ArrayList(RenderCommand),
@@ -35,7 +43,7 @@ pub const Renderer = struct {
     }
 
     pub fn render(self: *Renderer, resource_manager: *ResourceManager) void {
-        self.camera.updateAspectRatio(sokol.app.widthf() / sokol.app.heightf());
+        self.camera.update();
 
         // clear screen
         const pass = blk: {
@@ -53,8 +61,17 @@ pub const Renderer = struct {
         };
         sokol.gfx.beginPass(pass);
 
+        // execute render commands and handle potential errors
         for (self.render_queue.items) |cmd| {
-            self.executeRenderCommand(cmd, resource_manager);
+            self.executeRenderCommand(cmd, resource_manager) catch |err| {
+                std.log.err("failed to execute render command: {}", .{err});
+                switch (err) {
+                    RenderError.MissingShader => std.log.err(
+                        "shader '{s}' not found",
+                        .{cmd.material.shader_label},
+                    ),
+                }
+            };
         }
 
         sokol.gfx.endPass();
@@ -68,35 +85,32 @@ pub const Renderer = struct {
         try self.render_queue.append(cmd);
     }
 
-    fn executeRenderCommand(self: *const Renderer, cmd: RenderCommand, resource_manager: *ResourceManager) void {
-        if (resource_manager.getShader(cmd.material.shader_label)) |shader| {
-            sokol.gfx.applyPipeline(shader.pipeline);
-        }
+    fn executeRenderCommand(
+        self: *const Renderer,
+        cmd: RenderCommand,
+        resource_manager: *ResourceManager,
+    ) RenderError!void {
+        const shader = resource_manager.getShader(cmd.material.shader_label) orelse
+            return RenderError.MissingShader;
 
-        if (cmd.mesh) |mesh| {
-            const bindings = blk: {
-                var b = sokol.gfx.Bindings{};
-                b.vertex_buffers[0] = mesh.vbuf;
-                b.index_buffer = mesh.ibuf;
-                break :blk b;
-            };
-            sokol.gfx.applyBindings(bindings);
+        sokol.gfx.applyPipeline(shader.pipeline);
+        sokol.gfx.applyBindings(cmd.mesh.bindings);
 
-            if (resource_manager.getTransform(cmd.material.transform_label)) |transform| {
-                const mvp = Mat4.mul(self.camera.projection, Mat4.mul(
-                    self.camera.view,
-                    transform.get_model_matrix(),
-                ));
-                sokol.gfx.applyUniforms(0, sokol.gfx.asRange(&mvp));
-            }
+        const mvp = self.camera.computeMVP(cmd.transform);
 
-            sokol.gfx.draw(0, @intCast(mesh.indices.len), 1);
-        }
+        sokol.gfx.applyUniforms(UniformSlots.MODEL_VIEW_PROJECTION, sokol.gfx.asRange(&mvp));
+
+        const first_element = 0;
+        const element_count: u32 = @intCast(cmd.mesh.indices.len);
+
+        sokol.gfx.draw(first_element, element_count, cmd.instance_count);
     }
 };
 
 pub const RenderCommand = struct {
-    mesh: ?*Mesh, // maybe we just want to paint with a shader
-    transform: ?*Transform, // same as above
+    mesh: *Mesh,
+    transform: *Transform,
     material: *Material,
+    instance_count: u32 = 1,
+    instance_data: ?[]const u8 = null,
 };
