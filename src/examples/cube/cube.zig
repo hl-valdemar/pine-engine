@@ -100,23 +100,23 @@ const WorldState = struct {
                 22, 21, 20, 23, 22, 20,
             };
 
-            const label = "test";
+            const cube_label = "cube";
 
-            self.resource_manager.createMesh(label, &vertices, &indices) catch |err| {
-                std.log.err("failed to create test mesh: {}", .{err});
+            self.resource_manager.createMesh(cube_label, &vertices, &indices) catch |err| {
+                std.log.err("failed to create cube mesh: {}", .{err});
             };
 
             self.resource_manager.createShader(
-                label,
+                cube_label,
                 @embedFile("shaders/cube.vs.metal"),
                 @embedFile("shaders/cube.fs.metal"),
                 sokol.gfx.queryBackend(),
             ) catch |err| {
-                std.log.err("failed to create test shader: {}", .{err});
+                std.log.err("failed to create cube shader: {}", .{err});
             };
 
             self.resource_manager.createTransform(
-                label,
+                cube_label,
                 pine.math.Vec3.zeros(),
                 .{},
                 pine.math.Vec3.ones(),
@@ -125,8 +125,8 @@ const WorldState = struct {
                 @panic("FAILED TO CREATE TRANSFORM!\n");
             };
 
-            self.resource_manager.createMaterial(label, label) catch |err| {
-                std.log.err("failed to create test material: {}", .{err});
+            self.resource_manager.createMaterial(cube_label, cube_label) catch |err| {
+                std.log.err("failed to create cube material: {}", .{err});
                 @panic("FAILED TO CREATE TEST MATERIAL!\n");
             };
         }
@@ -137,30 +137,20 @@ const WorldState = struct {
             const self: *WorldState = @alignCast(@ptrCast(state));
 
             const dt = sokol.app.frameDuration();
+            const cube_label = "cube";
 
-            const mesh = if (self.resource_manager.getMesh("test")) |mesh| blk: {
-                break :blk mesh;
-            } else {
-                @panic("FAILED TO FIND REQUIRED MESH!\n");
-            };
-
-            const transform = if (self.resource_manager.getTransform("test")) |transform| blk: {
+            // apply rotation
+            const transform = if (self.resource_manager.getTransform(cube_label)) |transform| blk: {
                 transform.rotation.angle += @floatCast(dt * 100);
                 break :blk transform;
-            } else {
-                @panic("FAILED TO FIND REQUIRED TRANSFORM!\n");
-            };
-
-            const material = if (self.resource_manager.getMaterial("test")) |material| blk: {
-                break :blk material;
-            } else {
-                @panic("FAILED TO FIND REQUIRED MATERIAL!\n");
+            } else blk: {
+                break :blk null;
             };
 
             self.renderer.addRenderCommand(.{
-                .mesh = mesh,
+                .mesh = self.resource_manager.getMesh(cube_label),
                 .transform = transform,
-                .material = material,
+                .material = self.resource_manager.getMaterial(cube_label),
             }) catch |err| {
                 std.log.err("failed to add render command: {}", .{err});
             };

@@ -17,6 +17,9 @@ pub const UniformSlots = struct {
 };
 
 const RenderError = error{
+    MissingMesh,
+    MissingTransform,
+    MissingMaterial,
     MissingShader,
 };
 
@@ -66,10 +69,16 @@ pub const Renderer = struct {
             self.executeRenderCommand(cmd, resource_manager) catch |err| {
                 std.log.err("failed to execute render command: {}", .{err});
                 switch (err) {
-                    RenderError.MissingShader => std.log.err(
-                        "shader '{s}' not found",
-                        .{cmd.material.shader_label},
-                    ),
+                    RenderError.MissingMesh => std.log.err("mesh not found", .{}),
+                    RenderError.MissingTransform => std.log.err("transform not found", .{}),
+                    RenderError.MissingMaterial => std.log.err("material not found", .{}),
+                    RenderError.MissingShader => {
+                        if (cmd.material) |material| {
+                            std.log.err("shader '{s}' not found", .{material.shader_label});
+                        } else {
+                            std.log.err("shader not found", .{});
+                        }
+                    },
                 }
             };
         }
@@ -90,27 +99,36 @@ pub const Renderer = struct {
         cmd: RenderCommand,
         resource_manager: *ResourceManager,
     ) RenderError!void {
-        const shader = resource_manager.getShader(cmd.material.shader_label) orelse
+        const mesh = cmd.mesh orelse
+            return RenderError.MissingMesh;
+
+        const transform = cmd.transform orelse
+            return RenderError.MissingTransform;
+
+        const material = cmd.material orelse
+            return RenderError.MissingMaterial;
+
+        const shader = resource_manager.getShader(material.shader_label) orelse
             return RenderError.MissingShader;
 
         sokol.gfx.applyPipeline(shader.pipeline);
-        sokol.gfx.applyBindings(cmd.mesh.bindings);
+        sokol.gfx.applyBindings(mesh.bindings);
 
-        const mvp = self.camera.computeMVP(cmd.transform);
+        const mvp = self.camera.computeMVP(transform);
 
         sokol.gfx.applyUniforms(UniformSlots.MODEL_VIEW_PROJECTION, sokol.gfx.asRange(&mvp));
 
         const first_element = 0;
-        const element_count: u32 = @intCast(cmd.mesh.indices.len);
+        const element_count: u32 = @intCast(mesh.indices.len);
 
         sokol.gfx.draw(first_element, element_count, cmd.instance_count);
     }
 };
 
 pub const RenderCommand = struct {
-    mesh: *Mesh,
-    transform: *Transform,
-    material: *Material,
+    mesh: ?*Mesh,
+    transform: ?*Transform,
+    material: ?*Material,
     instance_count: u32 = 1,
     instance_data: ?[]const u8 = null,
 };
