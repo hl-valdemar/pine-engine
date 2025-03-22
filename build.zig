@@ -123,33 +123,33 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_exe_unit_tests.step);
 
-    // CUBE EXAMPLE
+    // PINE ENGINE EXAMPLES
 
-    const exe_cube_mod = b.createModule(.{
-        .root_source_file = b.path("src/examples/cube/cube.zig"),
+    const exe_examples_mod = b.createModule(.{
+        .root_source_file = b.path("src/examples/examples.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    exe_cube_mod.addImport("pine", lib_mod);
-    exe_cube_mod.addImport("sokol", dep_sokol.module("sokol"));
+    exe_examples_mod.addImport("pine", lib_mod);
+    exe_examples_mod.addImport("sokol", dep_sokol.module("sokol"));
 
-    const exe_cube = b.addExecutable(.{
-        .name = "cube_example",
-        .root_module = exe_cube_mod,
+    const exe_examples = b.addExecutable(.{
+        .name = "examples",
+        .root_module = exe_examples_mod,
     });
 
-    b.installArtifact(exe_cube);
+    b.installArtifact(exe_examples);
 
-    const run_cmd_cube = b.addRunArtifact(exe_cube);
-    run_cmd_cube.step.dependOn(b.getInstallStep());
+    const run_cmd_examples = b.addRunArtifact(exe_examples);
+    run_cmd_examples.step.dependOn(b.getInstallStep());
 
     // This allows the user to pass arguments to the application in the build
     // command itself, like this: `zig build run -- arg1 arg2 etc`
     if (b.args) |args| {
-        run_cmd_cube.addArgs(args);
+        run_cmd_examples.addArgs(args);
     }
 
-    const run_step_cube = b.step("cube", "Run the cube example");
-    run_step_cube.dependOn(&run_cmd_cube.step);
+    const run_step_examples = b.step("examples", "Run the given example");
+    run_step_examples.dependOn(&run_cmd_examples.step);
 }
