@@ -32,9 +32,9 @@ pub const Shader = struct {
         switch (backend) {
             .METAL_MACOS => {
                 shader_desc.vertex_func.source = vs_source_copy;
-                shader_desc.vertex_func.entry = "main0";
+                shader_desc.vertex_func.entry = "_main";
                 shader_desc.fragment_func.source = fs_source_copy;
-                shader_desc.fragment_func.entry = "main0";
+                shader_desc.fragment_func.entry = "_main";
                 shader_desc.uniform_blocks[0].layout = .STD140;
                 shader_desc.uniform_blocks[0].stage = .VERTEX;
                 shader_desc.uniform_blocks[0].size = @sizeOf(Mat4);

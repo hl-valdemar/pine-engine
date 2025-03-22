@@ -1,6 +1,8 @@
 const std = @import("std");
 const sokol = @import("sokol");
 
+const plog = @import("logging.zig").log;
+
 const ResourceManager = @import("resource_manager.zig").ResourceManager;
 const Camera = @import("camera.zig").Camera;
 const Mesh = @import("mesh.zig").Mesh;
@@ -28,16 +30,17 @@ pub const Renderer = struct {
     render_queue: std.ArrayList(RenderCommand),
     camera: Camera,
 
-    pub fn init(allocator: std.mem.Allocator) Renderer {
-        const fov = 60;
-        const aspect = sokol.app.widthf() / sokol.app.heightf();
-        const near = 0.01;
-        const far = 10;
+    pub fn init(allocator: std.mem.Allocator, camera: Camera) Renderer {
+        // const fov = 60;
+        // const aspect = sokol.app.widthf() / sokol.app.heightf();
+        // const near = 0.01;
+        // const far = 10;
 
         return .{
             .allocator = allocator,
             .render_queue = std.ArrayList(RenderCommand).init(allocator),
-            .camera = Camera.init(fov, aspect, near, far),
+            .camera = camera,
+            // .camera = Camera.init(fov, aspect, near, far),
         };
     }
 
@@ -67,16 +70,16 @@ pub const Renderer = struct {
         // execute render commands and handle potential errors
         for (self.render_queue.items) |cmd| {
             self.executeRenderCommand(cmd, resource_manager) catch |err| {
-                std.log.err("failed to execute render command: {}", .{err});
+                plog.err("failed to execute render command: {}", .{err});
                 switch (err) {
-                    RenderError.MissingMesh => std.log.err("mesh not found", .{}),
-                    RenderError.MissingTransform => std.log.err("transform not found", .{}),
-                    RenderError.MissingMaterial => std.log.err("material not found", .{}),
+                    RenderError.MissingMesh => plog.err("mesh not found", .{}),
+                    RenderError.MissingTransform => plog.err("transform not found", .{}),
+                    RenderError.MissingMaterial => plog.err("material not found", .{}),
                     RenderError.MissingShader => {
                         if (cmd.material) |material| {
-                            std.log.err("shader '{s}' not found", .{material.shader_label});
+                            plog.err("shader '{s}' not found", .{material.shader_label});
                         } else {
-                            std.log.err("shader not found", .{});
+                            plog.err("shader not found", .{});
                         }
                     },
                 }

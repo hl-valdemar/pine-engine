@@ -14,3 +14,5 @@ pub fn log_fn(
     const prefix = "[" ++ comptime message_level.asText() ++ "] (" ++ @tagName(scope) ++ "): ";
     nosuspend stderr.print(prefix ++ format ++ "\n", args) catch return;
 }
+
+pub const log = std.log.scoped(.pine);

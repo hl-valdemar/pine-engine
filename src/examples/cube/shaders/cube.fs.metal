@@ -3,19 +3,19 @@
 
 using namespace metal;
 
-struct main0_out
+struct main_out
 {
     float4 frag_color [[color(0)]];
 };
 
-struct main0_in
+struct main_in
 {
     float4 color [[user(locn0)]];
 };
 
-fragment main0_out main0(main0_in in [[stage_in]])
+fragment main_out _main(main_in in [[stage_in]])
 {
-    main0_out out = {};
+    main_out out = {};
     out.frag_color = in.color;
     return out;
 }

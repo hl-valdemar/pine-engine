@@ -1,4 +1,9 @@
 const std = @import("std");
+const pine = @import("pine");
+
+pub const std_options = std.Options{
+    .logFn = pine.logging.log_fn,
+};
 
 pub const ExampleError = error{
     NotEnoughArguments,

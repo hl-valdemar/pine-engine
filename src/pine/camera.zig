@@ -14,17 +14,13 @@ pub const Camera = struct {
     view: Mat4,
     projection: Mat4,
 
-    pub fn init(fov: f32, aspect: f32, near: f32, far: f32) Camera {
+    pub fn init(eye: Vec3, target: Vec3, fov: f32, aspect: f32, near: f32, far: f32) Camera {
         return .{
             .fov = fov,
             .aspect = aspect,
             .near = near,
             .far = far,
-            .view = Mat4.lookat(
-                Vec3.with(0, 1.5, 6),
-                Vec3.zeros(),
-                Vec3.up(),
-            ),
+            .view = Mat4.lookat(eye, target, Vec3.up()),
             .projection = Mat4.persp(fov, aspect, near, far),
         };
     }
