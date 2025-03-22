@@ -1,34 +1,33 @@
 const std = @import("std");
 
-// Simple PRNG for repeatable noise
-fn hash(seed: u32, x: i32, y: i32) u32 {
-    var h = seed +% @as(u32, @bitCast(x)) *% 1664525 +% @as(u32, @bitCast(y)) *% 1013904223;
-    h ^= h >> 16;
-    h *%= 0x85ebca6b;
-    h ^= h >> 13;
-    h *%= 0xc2b2ae35;
-    h ^= h >> 16;
-    return h;
-}
-
-// Smoothstep-like fade function (Perlin's 6t^5 - 15t^4 + 10t^3)
+// smoothstep-like fade function (perlin's 6t^5 - 15t^4 + 10t^3)
 fn fade(t: f32) f32 {
     return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
-// Linear interpolation
+// linear interpolation
 fn lerp(a: f32, b: f32, t: f32) f32 {
     return a + t * (b - a);
 }
 
-// Generate a random gradient vector based on grid position
+// generate a random gradient vector based on grid position
 fn gradient(seed: u32, ix: i32, iy: i32) [2]f32 {
-    const r = hash(seed, ix, iy);
-    const angle = @as(f32, @floatFromInt(r)) / @as(f32, @floatFromInt(std.math.maxInt(u32))) * 2.0 * std.math.pi;
+    // create a new hasher for this position
+    var hasher = std.hash.Wyhash.init(seed);
+    hasher.update(&std.mem.toBytes(ix));
+    hasher.update(&std.mem.toBytes(iy));
+    const position_seed = hasher.final();
+
+    // use position_seed to create a deterministic random number generator
+    var prng = std.Random.DefaultPrng.init(position_seed);
+    var random = prng.random();
+
+    // generate a random angle and convert to a unit vector
+    const angle = random.float(f32) * 2.0 * std.math.pi;
     return [2]f32{ @cos(angle), @sin(angle) };
 }
 
-// Dot product of distance vector and gradient
+// dot product of distance vector and gradient
 fn dotGradient(seed: u32, ix: i32, iy: i32, x: f32, y: f32) f32 {
     const grad = gradient(seed, ix, iy);
     const dx = x - @as(f32, @floatFromInt(ix));
@@ -36,56 +35,57 @@ fn dotGradient(seed: u32, ix: i32, iy: i32, x: f32, y: f32) f32 {
     return dx * grad[0] + dy * grad[1];
 }
 
-// 2D Perlin noise function
+// 2D perlin noise function
 pub fn noise(seed: u32, x: f32, y: f32) f32 {
     const x0 = @as(i32, @intFromFloat(@floor(x)));
     const x1 = x0 + 1;
     const y0 = @as(i32, @intFromFloat(@floor(y)));
     const y1 = y0 + 1;
 
-    // Fractional parts
+    // fractional parts
     const fx = x - @as(f32, @floatFromInt(x0));
     const fy = y - @as(f32, @floatFromInt(y0));
 
-    // Compute dot products for each corner
+    // compute dot products for each corner
     const n00 = dotGradient(seed, x0, y0, x, y);
     const n10 = dotGradient(seed, x1, y0, x, y);
     const n01 = dotGradient(seed, x0, y1, x, y);
     const n11 = dotGradient(seed, x1, y1, x, y);
 
-    // Interpolate along x
+    // interpolate along x
     const u = fade(fx);
     const nx0 = lerp(n00, n10, u);
     const nx1 = lerp(n01, n11, u);
 
-    // Interpolate along y
+    // interpolate along y
     const v = fade(fy);
     return lerp(nx0, nx1, v);
 }
 
-pub fn generatePerlinNoiseImage() void {
-    // Image dimensions
+// for testing
+pub fn generatePerlinNoiseImage() !void {
+    // image dimensions
     const width: usize = 512;
     const height: usize = 512;
 
-    // Noise parameters
+    // noise parameters
     const seed: u32 = 42;
-    const scale: f32 = 0.005; // Adjust this to change noise frequency
-    const octaves: usize = 4; // Number of octaves for fractal noise
+    const scale: f32 = 0.005; // adjust this to change noise frequency
+    const octaves: usize = 4; // number of octaves for fractal noise
 
-    // Create a file for the image
+    // create a file for the image
     const file = try std.fs.cwd().createFile("noise.ppm", .{});
     defer file.close();
 
-    // Write PPM header
+    // write ppm header
     try file.writer().print("P3\n{d} {d}\n255\n", .{ width, height });
 
-    // Generate noise and write pixel data
+    // generate noise and write pixel data
     var y: usize = 0;
     while (y < height) : (y += 1) {
         var x: usize = 0;
         while (x < width) : (x += 1) {
-            // Generate fractal noise by summing multiple octaves
+            // generate fractal noise by summing multiple octaves
             var noise_value: f32 = 0.0;
             var amplitude: f32 = 1.0;
             var frequency: f32 = 1.0;
@@ -103,16 +103,16 @@ pub fn generatePerlinNoiseImage() void {
                 frequency *= 2.0;
             }
 
-            // Normalize the noise to [0, 1]
+            // normalize the noise to [0, 1]
             noise_value = (noise_value / max_value + 1.0) * 0.5;
 
-            // Convert to 0-255 range for RGB values
+            // convert to 0-255 range for RGB values
             const color = @as(u8, @intFromFloat(noise_value * 255.0));
 
-            // Write the RGB triplet
+            // write the RGB triplet
             try file.writer().print("{d} {d} {d}\n", .{ color, color, color });
         }
     }
 
-    std.debug.print("Generated noise image: noise.ppm\n", .{});
+    std.debug.print("generated noise image: noise.ppm\n", .{});
 }
