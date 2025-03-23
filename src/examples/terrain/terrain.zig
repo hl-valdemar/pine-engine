@@ -228,7 +228,7 @@ const WorldState = struct {
                 pine.math.Vec3.ones(),
             ) catch |err| {
                 std.log.err("failed to create terrain transform: {}", .{err});
-                @panic("FAILED TO CREATE terrain TRANSFORM!\n");
+                @panic("FAILED TO CREATE TERRAIN TRANSFORM!\n");
             };
 
             self.resource_manager.createMaterial(self.grid.label, self.grid.label) catch |err| {
