@@ -38,6 +38,7 @@ fn runExamples(args: Args) ExampleError!void {
             \\    terrain
             \\    grass --terrain-type=[perlin,trig]
             \\    instancing
+            \\
         ;
 
         const stdout = std.io.getStdOut().writer();
