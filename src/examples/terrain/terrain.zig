@@ -27,8 +27,8 @@ const Grid = struct {
 
     label: []const u8,
     vertices: [vertex_count * 7]f32 = undefined, // x,y,z + r,g,b,a
-    indices_filled: [indices_count_filled]u16 = undefined,
-    indices_wireframe: [indices_count_wireframe]u16 = undefined,
+    indices_filled: [indices_count_filled]u32 = undefined,
+    indices_wireframe: [indices_count_wireframe]u32 = undefined,
 
     pub fn init(label: []const u8) Grid {
         var grid = Grid{

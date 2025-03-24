@@ -65,7 +65,7 @@ pub const ResourceManager = struct {
         self: *ResourceManager,
         label: []const u8,
         vertices: []const f32,
-        indices: []const u16,
+        indices: []const u32,
     ) !void {
         try self.meshes.put(label, try Mesh.init(
             self.allocator,

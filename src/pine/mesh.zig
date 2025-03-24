@@ -4,7 +4,7 @@ const sokol = @import("sokol");
 pub const Mesh = struct {
     allocator: std.mem.Allocator,
     vertices: []const f32,
-    indices: []const u16,
+    indices: []const u32,
     vbuf: sokol.gfx.Buffer,
     ibuf: sokol.gfx.Buffer,
     bindings: sokol.gfx.Bindings,
@@ -17,12 +17,12 @@ pub const Mesh = struct {
         allocator: std.mem.Allocator,
         label: []const u8,
         vertices: []const f32,
-        indices: []const u16,
+        indices: []const u32,
     ) !Mesh {
         const v_copy = try allocator.dupe(f32, vertices);
         errdefer allocator.free(v_copy);
 
-        const i_copy = try allocator.dupe(u16, indices);
+        const i_copy = try allocator.dupe(u32, indices);
         errdefer allocator.free(i_copy);
 
         const label_prefix = try allocator.dupe(u8, label);

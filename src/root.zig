@@ -10,6 +10,7 @@ pub const logging = @import("pine/logging.zig");
 pub const math = @import("pine/math.zig");
 pub const material = @import("pine/material.zig");
 pub const transform = @import("pine/transform.zig");
+pub const perlin = @import("pine/perlin.zig");
 
 //-- private --//
 
