@@ -1,5 +1,5 @@
 # Pine Engine
 
-Made for forests of lush pine. 🌿
+In honor of forests of lush pine. 🌿
 
 -- Built on Sokol and Zig
