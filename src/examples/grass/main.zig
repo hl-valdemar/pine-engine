@@ -112,7 +112,7 @@ const WorldState = struct {
     grid: Grid,
     grass: Grass,
 
-    pub fn init(allocator: std.mem.Allocator) WorldState {
+    pub fn init(allocator: std.mem.Allocator, terrain_type: []const u8) WorldState {
         const camera = pine.Camera.init(
             pine.math.Vec3.with(40, 30, 40),
             pine.math.Vec3.zeros(),
@@ -122,7 +122,7 @@ const WorldState = struct {
             100,
         );
 
-        const grid = Grid.init("terrain-grid");
+        const grid = Grid.init("terrain-grid", terrain_type);
         const grass = Grass.init("terrain-grass", &grid);
 
         return .{
@@ -284,7 +284,7 @@ const WorldState = struct {
     }
 };
 
-pub fn main() !void {
+pub fn main(terrain_type: []const u8) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer {
@@ -292,7 +292,7 @@ pub fn main() !void {
         if (status == .leak) std.debug.print("memory leak detected!\n", .{});
     }
 
-    var world = WorldState.init(allocator);
+    var world = WorldState.init(allocator, terrain_type);
     defer world.deinit();
 
     world.run();

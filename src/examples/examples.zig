@@ -8,7 +8,8 @@ pub const std_options = std.Options{
 pub const ExampleError = error{
     NotEnoughArguments,
     TooManyArguments,
-    InvalidArgument,
+    InvalidExample,
+    InvalidOption,
     NotImplemented,
     StdOut,
 };
@@ -21,25 +22,52 @@ fn runExamples(args: Args) ExampleError!void {
 
     if (args.len < 2) {
         return ExampleError.NotEnoughArguments;
-    } else if (args.len > 2) {
-        return ExampleError.TooManyArguments;
     }
 
     if (std.mem.eql(u8, args[1], "help")) {
+        if (args.len > 2) {
+            return ExampleError.TooManyArguments;
+        }
+
+        const help_msg =
+            \\Run examples: `examples [example] [--option]` using the binary, or with zig build: `zig build examples -- [example] [--option]`.
+            \\
+            \\  Examples with available options:
+            \\    
+            \\    cube
+            \\    terrain
+            \\    grass --terrain-type=[perlin,trig]
+            \\    instancing
+        ;
+
         const stdout = std.io.getStdOut().writer();
-        stdout.print("Run examples: `examples [example]`, or with zig build: `zig build examples -- [example]`. For a list of examples, look in the examples folder in the Pine Engine repo.\n", .{}) catch {
+        stdout.print("{s}", .{help_msg}) catch {
             return ExampleError.StdOut;
         };
     } else if (std.mem.eql(u8, args[1], "cube")) {
+        if (args.len > 2) return ExampleError.TooManyArguments;
         try @import("cube/main.zig").main();
     } else if (std.mem.eql(u8, args[1], "terrain")) {
+        if (args.len > 2) return ExampleError.TooManyArguments;
         try @import("terrain/main.zig").main();
     } else if (std.mem.eql(u8, args[1], "grass")) {
-        try @import("grass/main.zig").main();
+        if (args.len == 3) {
+            if (std.mem.eql(u8, args[2], "--terrain-type=perlin")) {
+                try @import("grass/main.zig").main("perlin");
+            } else if (std.mem.eql(u8, args[2], "--terrain-type=trig")) {
+                try @import("grass/main.zig").main("trig");
+            } else {
+                return ExampleError.InvalidOption;
+            }
+        } else if (args.len > 3) {
+            return ExampleError.TooManyArguments;
+        }
+        try @import("grass/main.zig").main("perlin");
     } else if (std.mem.eql(u8, args[1], "instancing")) {
+        if (args.len > 2) return ExampleError.TooManyArguments;
         try @import("instancing/main.zig").main();
     } else {
-        return ExampleError.InvalidArgument;
+        return ExampleError.InvalidExample;
     }
 }
 
@@ -65,7 +93,8 @@ pub fn main() !void {
         try switch (err) {
             ExampleError.NotEnoughArguments => printErrMsg("not enough arguments"),
             ExampleError.TooManyArguments => printErrMsg("too many arguments"),
-            ExampleError.InvalidArgument => printErrMsg("example doesn't exist"),
+            ExampleError.InvalidExample => printErrMsg("invalid example"),
+            ExampleError.InvalidOption => printErrMsg("invalid option"),
             ExampleError.NotImplemented => printErrMsg("example not implemented"),
             ExampleError.StdOut => printErrMsg("failed to get handle on stdout"),
         };

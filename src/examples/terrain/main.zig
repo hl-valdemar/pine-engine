@@ -7,22 +7,22 @@ pub const std_options = std.Options{
 };
 
 const Grid = struct {
-    const size: f32 = 40.0; // Total size of the grid
-    const resolution: u32 = 16; // Number of cells along each axis (NxN)
+    const size: f32 = 40.0; // total size of the grid
+    const resolution: u32 = 16; // number of cells along each axis (nxn)
 
-    // Derived values
+    // derived values
     const cells_per_side = resolution;
     const vertices_per_side = resolution + 1;
     const vertex_count = vertices_per_side * vertices_per_side;
 
-    // For filled triangles
+    // for filled triangles
     const triangles_per_cell = 2;
     const triangles_count = cells_per_side * cells_per_side * triangles_per_cell;
     const indices_count_filled = triangles_count * 3;
 
-    // For wireframe - we draw lines for all horizontal and vertical grid lines
-    const h_lines_count = vertices_per_side * cells_per_side; // Horizontal lines
-    const v_lines_count = cells_per_side * vertices_per_side; // Vertical lines
+    // for wireframe - we draw lines for all horizontal and vertical grid lines
+    const h_lines_count = vertices_per_side * cells_per_side; // horizontal lines
+    const v_lines_count = cells_per_side * vertices_per_side; // vertical lines
     const indices_count_wireframe = (h_lines_count + v_lines_count) * 2;
 
     label: []const u8,
@@ -53,32 +53,25 @@ const Grid = struct {
         while (z < vertices_per_side) : (z += 1) {
             var x: u32 = 0;
             while (x < vertices_per_side) : (x += 1) {
-                // Calculate vertex position
                 const pos_x = @as(f32, @floatFromInt(x)) * cell_size - half_size;
                 const pos_z = @as(f32, @floatFromInt(z)) * cell_size - half_size;
 
-                // Generate more interesting height values using position
+                // generate more interesting height values using position
                 const height_scale = 5.0;
                 const height = (rand.float(f32) * 0.7) +
                     (0.3 * @cos(pos_x * 0.2) * @sin(pos_z * 0.2)) * height_scale;
                 // const height = 0;
 
-                // Position (x, y, z)
                 self.vertices[idx + 0] = pos_x;
                 self.vertices[idx + 1] = height;
                 self.vertices[idx + 2] = pos_z;
 
-                // Color based on height (green to white gradient)
+                // color based on height (green to white gradient)
                 const normalized_height = height / height_scale;
                 self.vertices[idx + 3] = 0.2 + normalized_height * 0.8; // r (more red at higher elevations)
                 self.vertices[idx + 4] = 0.7; // g (always some green)
                 self.vertices[idx + 5] = 0.2 + normalized_height * 0.8; // b (more blue at higher elevations)
                 self.vertices[idx + 6] = 1.0; // a (always fully opaque)
-
-                // grid.vertices[idx + 3] = 1.0;
-                // grid.vertices[idx + 4] = 1.0;
-                // grid.vertices[idx + 5] = 1.0;
-                // grid.vertices[idx + 6] = 1.0;
 
                 idx += 7;
             }
@@ -86,25 +79,25 @@ const Grid = struct {
     }
 
     fn generateIndices(self: *Grid) void {
-        // Generate indices for filled triangles
+        // generate indices for filled triangles
         var idx_filled: u32 = 0;
 
         var z: u32 = 0;
         while (z < cells_per_side) : (z += 1) {
             var x: u32 = 0;
             while (x < cells_per_side) : (x += 1) {
-                // Calculate indices for the corners of this grid cell
+                // calculate indices for the corners of this grid cell
                 const top_left = z * vertices_per_side + x;
                 const top_right = top_left + 1;
                 const bottom_left = (z + 1) * vertices_per_side + x;
                 const bottom_right = bottom_left + 1;
 
-                // First triangle (top-left, bottom-left, bottom-right)
+                // first triangle (top-left, bottom-left, bottom-right)
                 self.indices_filled[idx_filled + 0] = @intCast(top_left);
                 self.indices_filled[idx_filled + 1] = @intCast(bottom_left);
                 self.indices_filled[idx_filled + 2] = @intCast(bottom_right);
 
-                // Second triangle (top-left, bottom-right, top-right)
+                // second triangle (top-left, bottom-right, top-right)
                 self.indices_filled[idx_filled + 3] = @intCast(top_left);
                 self.indices_filled[idx_filled + 4] = @intCast(bottom_right);
                 self.indices_filled[idx_filled + 5] = @intCast(top_right);
@@ -113,10 +106,10 @@ const Grid = struct {
             }
         }
 
-        // Generate indices for wireframe (grid lines)
+        // generate indices for wireframe view
         var idx_wireframe: u32 = 0;
 
-        // Horizontal lines (z-constant lines along x-axis)
+        // horizontal lines (z-constant lines along x-axis)
         z = 0;
         while (z < vertices_per_side) : (z += 1) {
             var x: u32 = 0;
@@ -131,7 +124,7 @@ const Grid = struct {
             }
         }
 
-        // Vertical lines (x-constant lines along z-axis)
+        // vertical lines (x-constant lines along z-axis)
         var x: u32 = 0;
         while (x < vertices_per_side) : (x += 1) {
             z = 0;
