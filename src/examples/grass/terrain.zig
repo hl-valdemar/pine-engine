@@ -1,7 +1,7 @@
 const std = @import("std");
 const pine = @import("pine");
 
-const palettes = @import("main.zig").palettes;
+const palettes = @import("palettes.zig").palettes;
 
 pub const Grid = struct {
     pub const size: f32 = 40.0; // total size of the grid

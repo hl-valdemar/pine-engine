@@ -1,7 +1,7 @@
 const std = @import("std");
 const pine = @import("pine");
 
-const palettes = @import("main.zig").palettes;
+const palettes = @import("palettes.zig").palettes;
 
 const Grid = @import("terrain.zig").Grid;
 
