@@ -31,13 +31,13 @@ fn runExamples(args: Args) ExampleError!void {
             return ExampleError.StdOut;
         };
     } else if (std.mem.eql(u8, args[1], "cube")) {
-        try @import("cube/cube.zig").main();
+        try @import("cube/main.zig").main();
     } else if (std.mem.eql(u8, args[1], "terrain")) {
-        try @import("terrain/terrain.zig").main();
+        try @import("terrain/main.zig").main();
     } else if (std.mem.eql(u8, args[1], "grass")) {
-        try @import("grass/grass.zig").main();
+        try @import("grass/main.zig").main();
     } else if (std.mem.eql(u8, args[1], "instancing")) {
-        try @import("instancing/instancing.zig").main();
+        try @import("instancing/main.zig").main();
     } else {
         return ExampleError.InvalidArgument;
     }
