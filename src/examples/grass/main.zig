@@ -165,14 +165,14 @@ const WorldState = struct {
                 .transform = terrain_transform,
                 .material = self.resource_manager.getMaterial(self.grid.label),
             }) catch |err| {
-                std.log.err("failed to add render command: {}", .{err});
+                std.log.err("failed to add render command for terrain: {}", .{err});
             };
             self.renderer.addRenderCommand(.{
                 .mesh = self.resource_manager.getMesh(self.grass.label),
                 .transform = grass_transform,
                 .material = self.resource_manager.getMaterial(self.grass.label),
             }) catch |err| {
-                std.log.err("failed to add render command: {}", .{err});
+                std.log.err("failed to add render command for grass: {}", .{err});
             };
 
             self.renderer.render(&self.resource_manager);

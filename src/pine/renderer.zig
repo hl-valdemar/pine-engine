@@ -31,16 +31,10 @@ pub const Renderer = struct {
     camera: Camera,
 
     pub fn init(allocator: std.mem.Allocator, camera: Camera) Renderer {
-        // const fov = 60;
-        // const aspect = sokol.app.widthf() / sokol.app.heightf();
-        // const near = 0.01;
-        // const far = 10;
-
         return .{
             .allocator = allocator,
             .render_queue = std.ArrayList(RenderCommand).init(allocator),
             .camera = camera,
-            // .camera = Camera.init(fov, aspect, near, far),
         };
     }
 
