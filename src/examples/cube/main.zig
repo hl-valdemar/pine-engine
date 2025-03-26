@@ -120,7 +120,11 @@ const WorldState = struct {
                 .logger = .{ .func = sokol.log.func },
             });
 
-            const cube_mesh_id = self.resource_manager.createMesh(cube_desc.label, &cube_desc.vertices, &cube_desc.indices) catch |err| {
+            const cube_mesh_id = self.resource_manager.createMesh(
+                cube_desc.label,
+                &cube_desc.vertices,
+                &cube_desc.indices,
+            ) catch |err| {
                 std.log.err("failed to create cube mesh: {}", .{err});
                 @panic("FAILED TO CREATE CUBE MESH!\n");
             };
@@ -135,12 +139,14 @@ const WorldState = struct {
                 @panic("FAILED TO CREATE CUBE SHADER!\n");
             };
 
-            const cube_material_id = self.resource_manager.createMaterial(cube_desc.label, cube_shader_id) catch |err| {
+            const cube_material_id = self.resource_manager.createMaterial(
+                cube_desc.label,
+                cube_shader_id,
+            ) catch |err| {
                 std.log.err("failed to create cube material: {}", .{err});
                 @panic("FAILED TO CREATE CUBE MATERIAL!\n");
             };
 
-            // create the cube node and add it to the scene
             var cube_node = self.scene.createNode(cube_desc.label) catch {
                 @panic("FAILED TO CREATE CUBE NODE!\n");
             };

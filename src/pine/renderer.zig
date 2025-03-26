@@ -42,7 +42,11 @@ pub const Renderer = struct {
         self.render_queue.deinit();
     }
 
-    pub fn renderScene(self: *Renderer, scene: *Scene, resource_manager: *ResourceManager) void {
+    pub fn renderScene(
+        self: *Renderer,
+        scene: *Scene,
+        resource_manager: *ResourceManager,
+    ) void {
         self.camera.update();
 
         // clear and collect render commands from scene graph
