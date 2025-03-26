@@ -4,18 +4,8 @@ const Transform = @import("transform.zig").Transform;
 const Mesh = @import("mesh.zig").Mesh;
 const Material = @import("material.zig").Material;
 
-const UniqueIDType = u64;
-
-const UniqueID = struct {
-    const INVALID: UniqueIDType = 0;
-
-    var next_id: UniqueIDType = INVALID + 1;
-
-    pub fn generateNext() UniqueIDType {
-        defer next_id += 1;
-        return next_id;
-    }
-};
+const UniqueID = @import("resource_manager.zig").UniqueID;
+const UniqueIDType = @import("resource_manager.zig").UniqueIDType;
 
 pub const Scene = struct {
     allocator: std.mem.Allocator,
@@ -100,12 +90,8 @@ pub const SceneNode = struct {
     mesh: ?*Mesh = null,
     material: ?*Material = null,
 
-    // TODO: switch out unique labels for unique IDs for all resources
-    // mesh_id: UniqueIDType = UniqueID.INVALID,
-    // material_id: UniqueIDType = UniqueID.INVALID,
-
-    mesh_label: ?[]const u8 = null,
-    material_label: ?[]const u8 = null,
+    mesh_id: UniqueIDType = UniqueID.INVALID,
+    material_id: UniqueIDType = UniqueID.INVALID,
 
     visible: bool = true,
 

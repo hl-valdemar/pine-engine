@@ -18,6 +18,8 @@ const math = @import("math.zig");
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 
+const UniqueID = @import("resource_manager.zig").UniqueID;
+
 pub const UniformSlots = struct {
     pub const MODEL_VIEW_PROJECTION = 0;
 };
@@ -44,51 +46,6 @@ pub const Renderer = struct {
 
     pub fn deinit(self: *const Renderer) void {
         self.render_queue.deinit();
-    }
-
-    pub fn render(self: *Renderer, resource_manager: *ResourceManager) void {
-        self.camera.update();
-
-        // clear screen
-        const pass = blk: {
-            var p = sokol.gfx.Pass{ .swapchain = sokol.glue.swapchain() };
-            p.action.colors[0] = .{
-                .load_action = .CLEAR,
-                .clear_value = .{
-                    .r = 0,
-                    .g = 0,
-                    .b = 0,
-                    .a = 1,
-                },
-            };
-            break :blk p;
-        };
-        sokol.gfx.beginPass(pass);
-
-        // execute render commands and handle potential errors
-        for (self.render_queue.items) |cmd| {
-            self.executeRenderCommand(cmd, resource_manager) catch |err| {
-                plog.err("failed to execute render command: {}", .{err});
-                switch (err) {
-                    RenderError.MissingMesh => plog.err("mesh not found", .{}),
-                    RenderError.MissingTransform => plog.err("transform not found", .{}),
-                    RenderError.MissingMaterial => plog.err("material not found", .{}),
-                    RenderError.MissingShader => {
-                        if (cmd.material) |material| {
-                            plog.err("shader '{s}' not found", .{material.shader_label});
-                        } else {
-                            plog.err("shader not found", .{});
-                        }
-                    },
-                }
-            };
-        }
-
-        sokol.gfx.endPass();
-        sokol.gfx.commit();
-
-        // ready the render queue for the next render call
-        self.render_queue.clearRetainingCapacity();
     }
 
     pub fn renderScene(self: *Renderer, scene: *Scene, resource_manager: *ResourceManager) void {
@@ -120,11 +77,11 @@ pub const Renderer = struct {
 
             pub fn processNode(ctx: *@This(), node: *SceneNode) void {
                 if (!node.visible) return;
-                if (node.mesh_label != null and node.material_label != null) {
+                if (node.mesh_id != UniqueID.INVALID and node.material_id != UniqueID.INVALID) {
                     const world_transform = node.getWorldTransform();
 
-                    const mesh = ctx.resource_manager.getMesh(node.mesh_label.?);
-                    const material = ctx.resource_manager.getMaterial(node.material_label.?);
+                    const mesh = ctx.resource_manager.getMesh(node.mesh_id);
+                    const material = ctx.resource_manager.getMaterial(node.material_id);
 
                     const cmd = RenderCommand{
                         .mesh = mesh,
@@ -163,7 +120,7 @@ pub const Renderer = struct {
                     RenderError.MissingMaterial => plog.err("material not found", .{}),
                     RenderError.MissingShader => {
                         if (cmd.material) |material| {
-                            plog.err("shader '{s}' not found", .{material.shader_label});
+                            plog.err("shader ID '{d}' not found", .{material.shader_id});
                         } else {
                             plog.err("shader not found", .{});
                         }
@@ -191,7 +148,7 @@ pub const Renderer = struct {
         const material = cmd.material orelse
             return RenderError.MissingMaterial;
 
-        const shader = resource_manager.getShader(material.shader_label) orelse
+        const shader = resource_manager.getShader(material.shader_id) orelse
             return RenderError.MissingShader;
 
         sokol.gfx.applyPipeline(shader.pipeline);

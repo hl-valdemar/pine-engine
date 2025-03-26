@@ -120,12 +120,12 @@ const WorldState = struct {
                 .logger = .{ .func = sokol.log.func },
             });
 
-            self.resource_manager.createMesh(cube_desc.label, &cube_desc.vertices, &cube_desc.indices) catch |err| {
+            const cube_mesh_id = self.resource_manager.createMesh(cube_desc.label, &cube_desc.vertices, &cube_desc.indices) catch |err| {
                 std.log.err("failed to create cube mesh: {}", .{err});
                 @panic("FAILED TO CREATE CUBE MESH!\n");
             };
 
-            self.resource_manager.createShader(
+            const cube_shader_id = self.resource_manager.createShader(
                 cube_desc.label,
                 @embedFile("shaders/cube.vs.metal"),
                 @embedFile("shaders/cube.fs.metal"),
@@ -135,7 +135,7 @@ const WorldState = struct {
                 @panic("FAILED TO CREATE CUBE SHADER!\n");
             };
 
-            self.resource_manager.createMaterial(cube_desc.label, cube_desc.label) catch |err| {
+            const cube_material_id = self.resource_manager.createMaterial(cube_desc.label, cube_shader_id) catch |err| {
                 std.log.err("failed to create cube material: {}", .{err});
                 @panic("FAILED TO CREATE CUBE MATERIAL!\n");
             };
@@ -144,8 +144,8 @@ const WorldState = struct {
             var cube_node = self.scene.createNode(cube_desc.label) catch {
                 @panic("FAILED TO CREATE CUBE NODE!\n");
             };
-            cube_node.mesh_label = cube_desc.label;
-            cube_node.material_label = cube_desc.label;
+            cube_node.mesh_id = cube_mesh_id;
+            cube_node.material_id = cube_material_id;
             self.scene.root.addChild(cube_node) catch {
                 @panic("FAILED TO ADD CUBE NODE TO SCENE!\n");
             };

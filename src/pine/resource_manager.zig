@@ -13,20 +13,33 @@ const math = @import("math.zig");
 const Vec3 = math.Vec3;
 const Quaternion = math.Quaternion;
 
+// resource IDs
+pub const UniqueIDType = u64;
+
+// ID manager
+pub const UniqueID = struct {
+    pub const INVALID: UniqueIDType = 0;
+
+    var next_id: UniqueIDType = INVALID + 1;
+
+    pub fn generateNext() UniqueIDType {
+        defer next_id += 1;
+        return next_id;
+    }
+};
+
 pub const ResourceManager = struct {
     allocator: std.mem.Allocator,
-    meshes: std.StringHashMap(Mesh),
-    shaders: std.StringHashMap(Shader),
-    materials: std.StringHashMap(Material),
-    transforms: std.StringHashMap(Transform),
+    meshes: std.AutoHashMap(UniqueIDType, Mesh),
+    shaders: std.AutoHashMap(UniqueIDType, Shader),
+    materials: std.AutoHashMap(UniqueIDType, Material),
 
     pub fn init(allocator: std.mem.Allocator) ResourceManager {
         return .{
             .allocator = allocator,
-            .meshes = std.StringHashMap(Mesh).init(allocator),
-            .shaders = std.StringHashMap(Shader).init(allocator),
-            .materials = std.StringHashMap(Material).init(allocator),
-            .transforms = std.StringHashMap(Transform).init(allocator),
+            .meshes = std.AutoHashMap(UniqueIDType, Mesh).init(allocator),
+            .shaders = std.AutoHashMap(UniqueIDType, Shader).init(allocator),
+            .materials = std.AutoHashMap(UniqueIDType, Material).init(allocator),
         };
     }
 
@@ -51,13 +64,6 @@ pub const ResourceManager = struct {
             m.deinit();
         }
         self.materials.deinit();
-
-        // free transforms
-        // var transform_iterator = self.transforms.valueIterator();
-        // while (transform_iterator.next()) |t| {
-        //     t.deinit();
-        // }
-        self.transforms.deinit();
     }
 
     // MESH HANDLING //
@@ -67,13 +73,15 @@ pub const ResourceManager = struct {
         label: []const u8,
         vertices: []const f32,
         indices: []const u32,
-    ) !void {
-        try self.meshes.put(label, try Mesh.init(
+    ) !UniqueIDType {
+        const new_id = UniqueID.generateNext();
+        try self.meshes.put(new_id, try Mesh.init(
             self.allocator,
             label,
             vertices,
             indices,
         ));
+        return new_id;
     }
 
     pub fn destroyMesh(
@@ -89,9 +97,9 @@ pub const ResourceManager = struct {
 
     pub fn getMesh(
         self: *ResourceManager,
-        label: []const u8,
+        id: UniqueIDType,
     ) ?*Mesh {
-        return self.meshes.getPtr(label);
+        return self.meshes.getPtr(id);
     }
 
     // SHADER HANDLING //
@@ -102,21 +110,23 @@ pub const ResourceManager = struct {
         vertex_source: []const u8,
         fragment_source: []const u8,
         backend: sokol.gfx.Backend,
-    ) !void {
-        try self.shaders.put(label, try Shader.init(
+    ) !UniqueIDType {
+        const new_id = UniqueID.generateNext();
+        try self.shaders.put(new_id, try Shader.init(
             self.allocator,
             label,
             vertex_source,
             fragment_source,
             backend,
         ));
+        return new_id;
     }
 
     pub fn destroyShader(
         self: *ResourceManager,
-        label: []const u8,
+        id: UniqueIDType,
     ) bool {
-        if (self.shaders.fetchRemove(label)) |entry| {
+        if (self.shaders.fetchRemove(id)) |entry| {
             entry.value.deinit();
             return true;
         }
@@ -125,9 +135,9 @@ pub const ResourceManager = struct {
 
     pub fn getShader(
         self: *ResourceManager,
-        label: []const u8,
+        id: UniqueIDType,
     ) ?*Shader {
-        return self.shaders.getPtr(label);
+        return self.shaders.getPtr(id);
     }
 
     // MATERIAL HANDLING //
@@ -135,20 +145,22 @@ pub const ResourceManager = struct {
     pub fn createMaterial(
         self: *ResourceManager,
         label: []const u8,
-        shader_label: []const u8,
-    ) !void {
-        try self.materials.put(label, try Material.init(
+        shader_id: UniqueIDType,
+    ) !UniqueIDType {
+        const new_id = UniqueID.generateNext();
+        try self.materials.put(new_id, try Material.init(
             self.allocator,
             label,
-            shader_label,
+            shader_id,
         ));
+        return new_id;
     }
 
     pub fn destroyMaterial(
         self: *ResourceManager,
-        label: []const u8,
+        id: UniqueIDType,
     ) void {
-        if (self.materials.fetchRemove(label)) |entry| {
+        if (self.materials.fetchRemove(id)) |entry| {
             entry.value.deinit();
             return true;
         }
@@ -157,42 +169,8 @@ pub const ResourceManager = struct {
 
     pub fn getMaterial(
         self: *ResourceManager,
-        label: []const u8,
+        id: UniqueIDType,
     ) ?*Material {
-        return self.materials.getPtr(label);
-    }
-
-    // TRANSFORM HANDLING //
-
-    pub fn createTransform(
-        self: *ResourceManager,
-        label: []const u8,
-        position: Vec3,
-        rotation: Quaternion,
-        scale: Vec3,
-    ) !void {
-        try self.transforms.put(label, .{
-            .position = position,
-            .rotation = rotation,
-            .scale = scale,
-        });
-    }
-
-    pub fn destroyTransform(
-        self: *ResourceManager,
-        label: []const u8,
-    ) void {
-        if (self.transforms.fetchRemove(label)) |entry| {
-            entry.value.deinit();
-            return true;
-        }
-        return false;
-    }
-
-    pub fn getTransform(
-        self: *ResourceManager,
-        label: []const u8,
-    ) ?*Transform {
-        return self.transforms.getPtr(label);
+        return self.materials.getPtr(id);
     }
 };
