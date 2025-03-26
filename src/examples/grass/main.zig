@@ -145,16 +145,17 @@ const WorldState = struct {
             const self: *WorldState = @alignCast(@ptrCast(state));
 
             const dt = sokol.app.frameDuration();
+            const rotational_constant = 0.25;
 
             // apply rotation
             const terrain_transform = if (self.resource_manager.getTransform(self.grid.label)) |transform| blk: {
-                transform.rotation.angle += @floatCast(dt * 10);
+                transform.rotate(pine.math.Vec3.up(), @floatCast(dt * rotational_constant));
                 break :blk transform;
             } else blk: {
                 break :blk null;
             };
             const grass_transform = if (self.resource_manager.getTransform(self.grass.label)) |transform| blk: {
-                transform.rotation.angle += @floatCast(dt * 10);
+                transform.rotate(pine.math.Vec3.up(), @floatCast(dt * rotational_constant));
                 break :blk transform;
             } else blk: {
                 break :blk null;

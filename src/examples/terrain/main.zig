@@ -239,7 +239,7 @@ const WorldState = struct {
 
             // apply rotation
             const transform = if (self.resource_manager.getTransform(self.grid.label)) |transform| blk: {
-                transform.rotation.angle += @floatCast(dt * 10);
+                transform.rotate(pine.math.Vec3.up(), @floatCast(dt * 0.25));
                 break :blk transform;
             } else blk: {
                 break :blk null;

@@ -35,7 +35,7 @@ pub const Camera = struct {
     }
 
     pub fn computeMVP(camera: *const Camera, transform: *const Transform) Mat4 {
-        const model_matrix = transform.get_model_matrix();
+        const model_matrix = transform.getModelMatrix();
         const view_projection = Mat4.mul(camera.projection, camera.view);
         return Mat4.mul(view_projection, model_matrix);
     }

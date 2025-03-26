@@ -11,6 +11,7 @@ const Rotation = transform.Rotation;
 
 const math = @import("math.zig");
 const Vec3 = math.Vec3;
+const Quaternion = math.Quaternion;
 
 pub const ResourceManager = struct {
     allocator: std.mem.Allocator,
@@ -52,10 +53,10 @@ pub const ResourceManager = struct {
         self.materials.deinit();
 
         // free transforms
-        var transform_iterator = self.transforms.valueIterator();
-        while (transform_iterator.next()) |t| {
-            t.deinit();
-        }
+        // var transform_iterator = self.transforms.valueIterator();
+        // while (transform_iterator.next()) |t| {
+        //     t.deinit();
+        // }
         self.transforms.deinit();
     }
 
@@ -167,7 +168,7 @@ pub const ResourceManager = struct {
         self: *ResourceManager,
         label: []const u8,
         position: Vec3,
-        rotation: Rotation,
+        rotation: Quaternion,
         scale: Vec3,
     ) !void {
         try self.transforms.put(label, .{

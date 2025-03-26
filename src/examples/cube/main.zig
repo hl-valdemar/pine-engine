@@ -133,10 +133,7 @@ const WorldState = struct {
             self.resource_manager.createTransform(
                 cube.label,
                 pine.math.Vec3.zeros(),
-                pine.transform.Rotation{
-                    .angle = 0,
-                    .axis_norm = pine.math.Vec3.with(0, 1, 1),
-                },
+                pine.math.Quaternion.identity(),
                 pine.math.Vec3.ones(),
             ) catch |err| {
                 std.log.err("failed to create cube transform: {}", .{err});
@@ -158,7 +155,7 @@ const WorldState = struct {
 
             // apply rotation
             const transform = if (self.resource_manager.getTransform(cube.label)) |transform| blk: {
-                transform.rotation.angle += @floatCast(dt * 100);
+                transform.rotate(pine.math.Vec3.with(0, 1, 1), @floatCast(dt * 1));
                 break :blk transform;
             } else blk: {
                 break :blk null;
