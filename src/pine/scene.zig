@@ -4,19 +4,93 @@ const Transform = @import("transform.zig").Transform;
 const Mesh = @import("mesh.zig").Mesh;
 const Material = @import("material.zig").Material;
 
-// static id counter
-const UniqueID = u64;
-var next_id: UniqueID = 0;
+const UniqueIDType = u64;
 
-pub fn generateUID() u64 {
-    defer next_id += 1;
-    return next_id;
-}
+const UniqueID = struct {
+    const INVALID: UniqueIDType = 0;
+
+    var next_id: UniqueIDType = INVALID + 1;
+
+    pub fn generateNext() UniqueIDType {
+        defer next_id += 1;
+        return next_id;
+    }
+};
+
+pub const Scene = struct {
+    allocator: std.mem.Allocator,
+
+    root: *SceneNode,
+    nodes_by_id: std.AutoHashMap(UniqueIDType, *SceneNode),
+
+    pub fn init(allocator: std.mem.Allocator) !Scene {
+        const root = try allocator.create(SceneNode);
+        root.* = try SceneNode.init(allocator, "root");
+
+        var nodes_by_id = std.AutoHashMap(UniqueIDType, *SceneNode).init(allocator);
+        try nodes_by_id.put(root.id, root);
+
+        return .{
+            .allocator = allocator,
+            .root = root,
+            .nodes_by_id = nodes_by_id,
+        };
+    }
+
+    pub fn deinit(self: *Scene) void {
+        self.root.deinit();
+        self.allocator.destroy(self.root);
+        self.nodes_by_id.deinit();
+    }
+
+    pub fn createNode(self: *Scene, label: []const u8) !*SceneNode {
+        const node = try self.allocator.create(SceneNode);
+        node.* = try SceneNode.init(self.allocator, label);
+        try self.nodes_by_id.put(node.id, node);
+        return node;
+    }
+
+    pub fn getNodeByUID(self: *Scene, id: UniqueIDType) ?*SceneNode {
+        return self.nodes_by_id.get(id);
+    }
+
+    pub fn traverse(self: *Scene, callback: fn (*SceneNode) void) void {
+        self.traverseNode(self.root, callback);
+    }
+
+    pub fn traverseNode(self: *Scene, node: *SceneNode, callback: fn (*SceneNode) void) void {
+        callback(node);
+        for (node.children.items) |child| {
+            self.traverseNode(child, callback);
+        }
+    }
+
+    pub fn traverseWithContext(
+        self: *Scene,
+        context: anytype,
+        callback: fn (*SceneNode, @TypeOf(context)) void,
+    ) void {
+        self.traverseNodeWithContext(self.root, context, callback);
+    }
+
+    fn traverseNodeWithContext(
+        self: *Scene,
+        node: *SceneNode,
+        context: anytype,
+        callback: fn (*SceneNode, @TypeOf(context)) void,
+    ) void {
+        callback(node, context);
+
+        for (node.children.items) |child| {
+            self.traverseNodeWithContext(child, context, callback);
+        }
+    }
+};
 
 pub const SceneNode = struct {
     allocator: std.mem.Allocator,
 
-    id: u64,
+    id: UniqueIDType,
     label: []const u8,
 
     parent: ?*SceneNode = null,
@@ -26,14 +100,21 @@ pub const SceneNode = struct {
     mesh: ?*Mesh = null,
     material: ?*Material = null,
 
+    // TODO: switch out unique labels for unique IDs for all resources
+    // mesh_id: UniqueIDType = UniqueID.INVALID,
+    // material_id: UniqueIDType = UniqueID.INVALID,
+
+    mesh_label: ?[]const u8 = null,
+    material_label: ?[]const u8 = null,
+
     visible: bool = true,
 
-    pub fn init(allocator: std.mem.Allocator, label: []const u8) SceneNode {
-        const label_copy = allocator.dupe(u8, label);
+    pub fn init(allocator: std.mem.Allocator, label: []const u8) !SceneNode {
+        const label_copy = try allocator.dupe(u8, label);
 
         return .{
             .allocator = allocator,
-            .id = generateUID(),
+            .id = UniqueID.generateNext(),
             .label = label_copy,
             .parent = null,
             .children = std.ArrayList(*SceneNode).init(allocator),

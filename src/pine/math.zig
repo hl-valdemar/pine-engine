@@ -13,7 +13,7 @@ pub const Vec2 = extern struct {
         return Vec2{ .x = 0.0, .y = 0.0 };
     }
 
-    pub fn new(x: f32, y: f32) Vec2 {
+    pub fn with(x: f32, y: f32) Vec2 {
         return Vec2{ .x = x, .y = y };
     }
 };
@@ -43,16 +43,20 @@ pub const Vec3 = extern struct {
         return math.sqrt(Vec3.dot(v, v));
     }
 
-    pub fn add(left: Vec3, right: Vec3) Vec3 {
-        return Vec3{ .x = left.x + right.x, .y = left.y + right.y, .z = left.z + right.z };
+    pub fn add(a: Vec3, b: Vec3) Vec3 {
+        return Vec3{ .x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z };
     }
 
-    pub fn sub(left: Vec3, right: Vec3) Vec3 {
-        return Vec3{ .x = left.x - right.x, .y = left.y - right.y, .z = left.z - right.z };
+    pub fn sub(a: Vec3, b: Vec3) Vec3 {
+        return Vec3{ .x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z };
     }
 
-    pub fn mul(v: Vec3, s: f32) Vec3 {
+    pub fn scale(v: Vec3, s: f32) Vec3 {
         return Vec3{ .x = v.x * s, .y = v.y * s, .z = v.z * s };
+    }
+
+    pub fn mul(a: Vec3, b: Vec3) Vec3 {
+        return Vec3{ .x = a.x * b.x, .y = a.y * b.y, .z = a.z * b.z };
     }
 
     pub fn norm(v: Vec3) Vec3 {
@@ -64,16 +68,16 @@ pub const Vec3 = extern struct {
         }
     }
 
-    pub fn cross(v0: Vec3, v1: Vec3) Vec3 {
+    pub fn cross(a: Vec3, b: Vec3) Vec3 {
         return Vec3{
-            .x = (v0.y * v1.z) - (v0.z * v1.y),
-            .y = (v0.z * v1.x) - (v0.x * v1.z),
-            .z = (v0.x * v1.y) - (v0.y * v1.x),
+            .x = (a.y * b.z) - (a.z * b.y),
+            .y = (a.z * b.x) - (a.x * b.z),
+            .z = (a.x * b.y) - (a.y * b.x),
         };
     }
 
-    pub fn dot(v0: Vec3, v1: Vec3) f32 {
-        return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
+    pub fn dot(a: Vec3, b: Vec3) f32 {
+        return a.x * b.x + a.y * b.y + a.z * b.z;
     }
 };
 
@@ -250,6 +254,23 @@ pub const Quaternion = struct {
 
         return result;
     }
+
+    pub fn rotateVec3(self: Quaternion, v: Vec3) Vec3 {
+        // qvq^-1 rotation
+        const u = Vec3.with(self.x, self.y, self.z);
+        const s = self.w;
+
+        // the formula is: v' = 2.0 * dot(u, v) * u + (s*s - dot(u, u)) * v + 2.0 * s * cross(u, v)
+        const dot_uv = Vec3.dot(u, v);
+        const dot_uu = Vec3.dot(u, u);
+        const cross_uv = Vec3.cross(u, v);
+
+        const term1 = Vec3.scale(u, 2.0 * dot_uv);
+        const term2 = Vec3.scale(v, s * s - dot_uu);
+        const term3 = Vec3.scale(cross_uv, 2.0 * s);
+
+        return Vec3.add(Vec3.add(term1, term2), term3);
+    }
 };
 
 test "Vec3.zero" {
@@ -257,7 +278,7 @@ test "Vec3.zero" {
     assert(v.x == 0.0 and v.y == 0.0 and v.z == 0.0);
 }
 
-test "Vec3.new" {
+test "Vec3.with" {
     const v = Vec3.with(1.0, 2.0, 3.0);
     assert(v.x == 1.0 and v.y == 2.0 and v.z == 3.0);
 }

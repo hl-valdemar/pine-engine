@@ -3,11 +3,6 @@ const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 const Quaternion = math.Quaternion;
 
-pub const Rotation = struct {
-    angle: f32 = 0,
-    axis_norm: Vec3 = Vec3.up(),
-};
-
 pub const Transform = struct {
     position: Vec3 = Vec3.zeros(),
     rotation: Quaternion = Quaternion.identity(),
@@ -27,5 +22,20 @@ pub const Transform = struct {
 
     pub fn setRotation(self: *Transform, axis: Vec3, angle: f32) void {
         self.rotation = Quaternion.fromAxisAngle(axis, angle);
+    }
+
+    pub fn combine(parent: Transform, child: Transform) Transform {
+        // HOW? SCALE -> ROTATE -> TRANSFORM
+
+        var result = Transform{};
+        result.scale = Vec3.mul(parent.scale, child.scale);
+
+        var rotated_position = parent.rotation.rotateVec3(child.position);
+        rotated_position = Vec3.mul(rotated_position, parent.scale);
+
+        result.position = Vec3.add(parent.position, rotated_position);
+        result.rotation = Quaternion.mul(parent.rotation, child.rotation);
+
+        return result;
     }
 };

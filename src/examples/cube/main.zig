@@ -6,7 +6,7 @@ pub const std_options = std.Options{
     .logFn = pine.logging.log_fn,
 };
 
-const cube = struct {
+const cube_desc = struct {
     const label = "cube-example";
 
     const vertices = [_]f32{
@@ -60,12 +60,15 @@ const cube = struct {
 };
 
 const WorldState = struct {
+    var cube_node_id: u64 = 0;
+
     allocator: std.mem.Allocator,
     resource_manager: pine.ResourceManager,
     camera: pine.Camera,
     renderer: pine.Renderer,
+    scene: pine.Scene,
 
-    pub fn init(allocator: std.mem.Allocator) WorldState {
+    pub fn init(allocator: std.mem.Allocator) !WorldState {
         const camera = pine.Camera.init(
             pine.math.Vec3.with(1, 2, 6),
             pine.math.Vec3.zeros(),
@@ -80,12 +83,14 @@ const WorldState = struct {
             .resource_manager = pine.ResourceManager.init(allocator),
             .camera = camera,
             .renderer = pine.Renderer.init(allocator, camera),
+            .scene = try pine.Scene.init(allocator),
         };
     }
 
     pub fn deinit(self: *WorldState) void {
         self.resource_manager.deinit();
         self.renderer.deinit();
+        self.scene.deinit();
 
         // important
         sokol.gfx.shutdown();
@@ -115,13 +120,13 @@ const WorldState = struct {
                 .logger = .{ .func = sokol.log.func },
             });
 
-            self.resource_manager.createMesh(cube.label, &cube.vertices, &cube.indices) catch |err| {
+            self.resource_manager.createMesh(cube_desc.label, &cube_desc.vertices, &cube_desc.indices) catch |err| {
                 std.log.err("failed to create cube mesh: {}", .{err});
                 @panic("FAILED TO CREATE CUBE MESH!\n");
             };
 
             self.resource_manager.createShader(
-                cube.label,
+                cube_desc.label,
                 @embedFile("shaders/cube.vs.metal"),
                 @embedFile("shaders/cube.fs.metal"),
                 sokol.gfx.queryBackend(),
@@ -130,20 +135,22 @@ const WorldState = struct {
                 @panic("FAILED TO CREATE CUBE SHADER!\n");
             };
 
-            self.resource_manager.createTransform(
-                cube.label,
-                pine.math.Vec3.zeros(),
-                pine.math.Quaternion.identity(),
-                pine.math.Vec3.ones(),
-            ) catch |err| {
-                std.log.err("failed to create cube transform: {}", .{err});
-                @panic("FAILED TO CREATE CUBE TRANSFORM!\n");
-            };
-
-            self.resource_manager.createMaterial(cube.label, cube.label) catch |err| {
+            self.resource_manager.createMaterial(cube_desc.label, cube_desc.label) catch |err| {
                 std.log.err("failed to create cube material: {}", .{err});
                 @panic("FAILED TO CREATE CUBE MATERIAL!\n");
             };
+
+            // create the cube node and add it to the scene
+            var cube_node = self.scene.createNode(cube_desc.label) catch {
+                @panic("FAILED TO CREATE CUBE NODE!\n");
+            };
+            cube_node.mesh_label = cube_desc.label;
+            cube_node.material_label = cube_desc.label;
+            self.scene.root.addChild(cube_node) catch {
+                @panic("FAILED TO ADD CUBE NODE TO SCENE!\n");
+            };
+
+            cube_node_id = cube_node.id;
         }
     }
 
@@ -153,23 +160,15 @@ const WorldState = struct {
 
             const dt = sokol.app.frameDuration();
 
-            // apply rotation
-            const transform = if (self.resource_manager.getTransform(cube.label)) |transform| blk: {
-                transform.rotate(pine.math.Vec3.with(0, 1, 1), @floatCast(dt * 1));
-                break :blk transform;
-            } else blk: {
-                break :blk null;
-            };
+            const cube_node = self.scene.getNodeByUID(cube_node_id);
+            if (cube_node) |cube| {
+                cube.*.transform.rotate(
+                    pine.math.Vec3.with(0, 1, 1),
+                    @floatCast(dt * 0.5),
+                );
+            }
 
-            self.renderer.addRenderCommand(.{
-                .mesh = self.resource_manager.getMesh(cube.label),
-                .transform = transform,
-                .material = self.resource_manager.getMaterial(cube.label),
-            }) catch |err| {
-                std.log.err("failed to add render command: {}", .{err});
-            };
-
-            self.renderer.render(&self.resource_manager);
+            self.renderer.renderScene(&self.scene, &self.resource_manager);
         }
     }
 
@@ -193,7 +192,9 @@ pub fn main() !void {
         if (status == .leak) std.debug.print("memory leak detected!\n", .{});
     }
 
-    var world = WorldState.init(allocator);
+    var world = WorldState.init(allocator) catch {
+        @panic("FAILED TO INITIALIZE WORLD STATE!\n");
+    };
     defer world.deinit();
 
     world.run();
