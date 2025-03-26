@@ -192,6 +192,66 @@ pub const Mat4 = extern struct {
     }
 };
 
+pub const Quaternion = struct {
+    x: f32 = 0,
+    y: f32 = 0,
+    z: f32 = 0,
+    w: f32 = 1,
+
+    pub fn identity() Quaternion {
+        return .{ .x = 0, .y = 0, .z = 0, .w = 1 };
+    }
+
+    pub fn fromAxisAngle(axis: Vec3, angle: f32) Quaternion {
+        const half_angle = angle * 0.5;
+        const s = @sin(half_angle);
+        const norm_axis = Vec3.norm(axis);
+
+        return .{
+            .x = norm_axis.x * s,
+            .y = norm_axis.y * s,
+            .z = norm_axis.z * s,
+            .w = @cos(half_angle),
+        };
+    }
+
+    pub fn mul(a: Quaternion, b: Quaternion) Quaternion {
+        return .{
+            .x = a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+            .y = a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+            .z = a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+            .w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
+        };
+    }
+
+    pub fn toMat4(q: Quaternion) Mat4 {
+        const x2 = q.x * q.x;
+        const y2 = q.y * q.y;
+        const z2 = q.z * q.z;
+        const xy = q.x * q.y;
+        const xz = q.x * q.z;
+        const yz = q.y * q.z;
+        const wx = q.w * q.x;
+        const wy = q.w * q.y;
+        const wz = q.w * q.z;
+
+        var result = Mat4.identity();
+        result.m[0][0] = 1.0 - 2.0 * (y2 + z2);
+        result.m[0][1] = 2.0 * (xy - wz);
+        result.m[0][2] = 2.0 * (xz + wy);
+
+        result.m[1][0] = 2.0 * (xy + wz);
+        result.m[1][1] = 1.0 - 2.0 * (x2 + z2);
+        result.m[1][2] = 2.0 * (yz - wx);
+
+        result.m[2][0] = 2.0 * (xz - wy);
+        result.m[2][1] = 2.0 * (yz + wx);
+        result.m[2][2] = 1.0 - 2.0 * (x2 + y2);
+
+        return result;
+    }
+};
+
 test "Vec3.zero" {
     const v = Vec3.zeros();
     assert(v.x == 0.0 and v.y == 0.0 and v.z == 0.0);
