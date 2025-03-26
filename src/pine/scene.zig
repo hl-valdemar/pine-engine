@@ -7,6 +7,28 @@ const Material = @import("material.zig").Material;
 const UniqueID = @import("resource_manager.zig").UniqueID;
 const UniqueIDType = @import("resource_manager.zig").UniqueIDType;
 
+pub const SceneVisitor = struct {
+    visitFn: *const fn (self: *SceneVisitor, node: *SceneNode) void,
+
+    pub fn visit(self: *SceneVisitor, node: *SceneNode) void {
+        self.visitFn(self, node);
+    }
+
+    // generic method to create a visitor from any type with a visitNode method
+    pub fn init(comptime T: type) SceneVisitor {
+        const visitNodeFn = struct {
+            fn visit(visitor: *SceneVisitor, node: *SceneNode) void {
+                const self: *T = @fieldParentPtr("visitor", visitor);
+                self.visitNode(node);
+            }
+        }.visit;
+
+        return .{
+            .visitFn = visitNodeFn,
+        };
+    }
+};
+
 pub const Scene = struct {
     allocator: std.mem.Allocator,
 
@@ -44,35 +66,38 @@ pub const Scene = struct {
         return self.nodes_by_id.get(id);
     }
 
-    pub fn traverse(self: *Scene, callback: fn (*SceneNode) void) void {
-        self.traverseNode(self.root, callback);
+    pub fn accept(self: *Scene, visitor: *SceneVisitor) void {
+        self.acceptNode(self.root, visitor);
     }
 
-    pub fn traverseNode(self: *Scene, node: *SceneNode, callback: fn (*SceneNode) void) void {
-        callback(node);
+    pub fn acceptNode(self: *Scene, node: *SceneNode, visitor: *SceneVisitor) void {
+        visitor.visit(node);
+
         for (node.children.items) |child| {
-            self.traverseNode(child, callback);
+            self.acceptNode(child, visitor);
         }
     }
 
-    pub fn traverseWithContext(
+    pub fn acceptFiltered(
         self: *Scene,
-        context: anytype,
-        callback: fn (*SceneNode, @TypeOf(context)) void,
+        visitor: *SceneVisitor,
+        filter: *const fn (*SceneNode) bool,
     ) void {
-        self.traverseNodeWithContext(self.root, context, callback);
+        self.acceptNodeFiltered(self.root, visitor, filter);
     }
 
-    fn traverseNodeWithContext(
+    pub fn acceptNodeFiltered(
         self: *Scene,
         node: *SceneNode,
-        context: anytype,
-        callback: fn (*SceneNode, @TypeOf(context)) void,
+        visitor: *SceneVisitor,
+        filter: *const fn (*SceneNode) bool,
     ) void {
-        callback(node, context);
+        if (filter(node)) {
+            visitor.visit(node);
+        }
 
         for (node.children.items) |child| {
-            self.traverseNodeWithContext(child, context, callback);
+            self.acceptNodeFiltered(child, visitor, filter);
         }
     }
 };

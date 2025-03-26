@@ -13,6 +13,7 @@ const Transform = @import("transform.zig").Transform;
 const sc = @import("scene.zig");
 const Scene = sc.Scene;
 const SceneNode = sc.SceneNode;
+const SceneVisitor = sc.SceneVisitor;
 
 const math = @import("math.zig");
 const Vec3 = math.Vec3;
@@ -22,13 +23,6 @@ const UniqueID = @import("resource_manager.zig").UniqueID;
 
 pub const UniformSlots = struct {
     pub const MODEL_VIEW_PROJECTION = 0;
-};
-
-const RenderError = error{
-    MissingMesh,
-    MissingTransform,
-    MissingMaterial,
-    MissingShader,
 };
 
 pub const Renderer = struct {
@@ -51,6 +45,19 @@ pub const Renderer = struct {
     pub fn renderScene(self: *Renderer, scene: *Scene, resource_manager: *ResourceManager) void {
         self.camera.update();
 
+        // clear and collect render commands from scene graph
+        self.render_queue.clearRetainingCapacity();
+
+        var render_visitor = RenderVisitor.init(self, resource_manager);
+
+        const visibility_filter = struct {
+            fn filter(node: *SceneNode) bool {
+                return node.visible;
+            }
+        }.filter;
+
+        scene.acceptFiltered(&render_visitor.visitor, visibility_filter);
+
         // clear screen
         const pass = blk: {
             var p = sokol.gfx.Pass{ .swapchain = sokol.glue.swapchain() };
@@ -67,66 +74,8 @@ pub const Renderer = struct {
         };
         sokol.gfx.beginPass(pass);
 
-        // clear and collect render commands from scene graph
-        self.render_queue.clearRetainingCapacity();
-
-        // create a context structure for the traversal
-        const TraversalContext = struct {
-            renderer: *Renderer,
-            resource_manager: *ResourceManager,
-
-            pub fn processNode(ctx: *@This(), node: *SceneNode) void {
-                if (!node.visible) return;
-                if (node.mesh_id != UniqueID.INVALID and node.material_id != UniqueID.INVALID) {
-                    const world_transform = node.getWorldTransform();
-
-                    const mesh = ctx.resource_manager.getMesh(node.mesh_id);
-                    const material = ctx.resource_manager.getMaterial(node.material_id);
-
-                    const cmd = RenderCommand{
-                        .mesh = mesh,
-                        .transform = world_transform, // NOTE: this needs to be handled properly
-                        .material = material,
-                    };
-
-                    ctx.renderer.addRenderCommand(cmd) catch |err| {
-                        plog.err("failed to add render command: {}", .{err});
-                    };
-                }
-            }
-        };
-
-        var context = TraversalContext{
-            .renderer = self,
-            .resource_manager = resource_manager,
-        };
-
-        // create a wrapper function that takes just the node parameter
-        const wrapper_fn = struct {
-            fn callback(node: *SceneNode, ctx_ptr: *TraversalContext) void {
-                ctx_ptr.processNode(node);
-            }
-        }.callback;
-
-        scene.traverseWithContext(&context, wrapper_fn);
-
-        // execute render commands
         for (self.render_queue.items) |cmd| {
-            self.executeRenderCommand(cmd, resource_manager) catch |err| {
-                plog.err("failed to execute render command: {}", .{err});
-                switch (err) {
-                    RenderError.MissingMesh => plog.err("mesh not found", .{}),
-                    RenderError.MissingTransform => plog.err("transform not found", .{}),
-                    RenderError.MissingMaterial => plog.err("material not found", .{}),
-                    RenderError.MissingShader => {
-                        if (cmd.material) |material| {
-                            plog.err("shader ID '{d}' not found", .{material.shader_id});
-                        } else {
-                            plog.err("shader not found", .{});
-                        }
-                    },
-                }
-            };
+            self.executeRenderCommand(cmd, resource_manager);
         }
 
         sokol.gfx.endPass();
@@ -141,34 +90,85 @@ pub const Renderer = struct {
         self: *const Renderer,
         cmd: RenderCommand,
         resource_manager: *ResourceManager,
-    ) RenderError!void {
-        const mesh = cmd.mesh orelse
-            return RenderError.MissingMesh;
-
-        const material = cmd.material orelse
-            return RenderError.MissingMaterial;
-
-        const shader = resource_manager.getShader(material.shader_id) orelse
-            return RenderError.MissingShader;
+    ) void {
+        const shader = if (resource_manager.getShader(cmd.material.shader_id)) |s| blk: {
+            break :blk s;
+        } else {
+            plog.err("shader ID '{d}' not found", .{cmd.material.shader_id});
+            return;
+        };
 
         sokol.gfx.applyPipeline(shader.pipeline);
-        sokol.gfx.applyBindings(mesh.bindings);
+        sokol.gfx.applyBindings(cmd.mesh.bindings);
 
         const mvp = self.camera.computeMVP(&cmd.transform);
 
         sokol.gfx.applyUniforms(UniformSlots.MODEL_VIEW_PROJECTION, sokol.gfx.asRange(&mvp));
 
         const first_element = 0;
-        const element_count: u32 = @intCast(mesh.indices.len);
+        const element_count: u32 = @intCast(cmd.mesh.indices.len);
 
         sokol.gfx.draw(first_element, element_count, cmd.instance_count);
     }
 };
 
 pub const RenderCommand = struct {
-    mesh: ?*const Mesh,
+    mesh: *const Mesh,
     transform: Transform,
-    material: ?*const Material,
+    material: *const Material,
     instance_count: u32 = 1,
     instance_data: ?[]const u8 = null,
+};
+
+const RenderVisitor = struct {
+    visitor: SceneVisitor,
+    renderer: *Renderer,
+    resource_manager: *ResourceManager,
+
+    pub fn init(renderer: *Renderer, resource_manager: *ResourceManager) RenderVisitor {
+        return .{
+            .visitor = SceneVisitor.init(RenderVisitor),
+            .renderer = renderer,
+            .resource_manager = resource_manager,
+        };
+    }
+
+    pub fn visitNode(self: *RenderVisitor, node: *SceneNode) void {
+        if (!node.visible) return;
+
+        if (node.mesh_id != UniqueID.INVALID and node.material_id != UniqueID.INVALID) {
+            const mesh = if (self.resource_manager.getMesh(node.mesh_id)) |m| blk: {
+                break :blk m;
+            } else {
+                plog.err(
+                    "mesh not found for node {s} with mesh_id {d}",
+                    .{ node.label, node.mesh_id },
+                );
+                return;
+            };
+
+            const material = if (self.resource_manager.getMaterial(node.material_id)) |m| blk: {
+                break :blk m;
+            } else {
+                plog.err(
+                    "material not found for node {s} with material_id {d}",
+                    .{ node.label, node.material_id },
+                );
+                return;
+            };
+
+            const cmd = RenderCommand{
+                .mesh = mesh,
+                .transform = node.getWorldTransform(),
+                .material = material,
+            };
+
+            self.renderer.addRenderCommand(cmd) catch |err| {
+                plog.err(
+                    "failed to add render command for node {s}: {}",
+                    .{ node.label, err },
+                );
+            };
+        }
+    }
 };
