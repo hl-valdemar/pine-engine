@@ -12,6 +12,7 @@ const Transform = @import("transform.zig").Transform;
 const shd = @import("shader.zig");
 const Shader = shd.Shader;
 const VsParams = shd.VsParams;
+const FsParams = shd.FsParams;
 
 const sc = @import("scene.zig");
 const Scene = sc.Scene;
@@ -20,12 +21,14 @@ const SceneVisitor = sc.SceneVisitor;
 
 const math = @import("math.zig");
 const Vec3 = math.Vec3;
+const Vec4 = math.Vec4;
 const Mat4 = math.Mat4;
 
 const UniqueID = @import("resource_manager.zig").UniqueID;
 
 pub const UniformSlots = struct {
     pub const VS_PARAMS = 0;
+    pub const FS_PARAMS = 1;
 };
 
 pub const Renderer = struct {
@@ -113,8 +116,13 @@ pub const Renderer = struct {
             .view = self.camera.view,
             .projection = self.camera.projection,
         };
+        const fs_params = FsParams{
+            .color_intensities = Vec4.with(1, 1, 1, 1), // NOTE: just for debugging.
+        };
 
         sokol.gfx.applyUniforms(UniformSlots.VS_PARAMS, sokol.gfx.asRange(&vs_params));
+
+        sokol.gfx.applyUniforms(UniformSlots.FS_PARAMS, sokol.gfx.asRange(&fs_params));
 
         const first_element = 0;
         const element_count: u32 = @intCast(cmd.mesh.indices.len);

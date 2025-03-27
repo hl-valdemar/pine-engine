@@ -1,13 +1,18 @@
 const std = @import("std");
 const sokol = @import("sokol");
 
-const Mat4 = @import("math.zig").Mat4;
+const math = @import("math.zig");
+const Mat4 = math.Mat4;
+const Vec4 = math.Vec4;
 
 pub const VsParams = struct {
     model: Mat4,
-    // mvp: Mat4,
     view: Mat4,
     projection: Mat4,
+};
+
+pub const FsParams = struct {
+    color_intensities: Vec4,
 };
 
 pub const Shader = struct {
@@ -48,6 +53,11 @@ pub const Shader = struct {
                 shader_desc.uniform_blocks[0].layout = .STD140;
                 shader_desc.uniform_blocks[0].msl_buffer_n = 0;
                 shader_desc.uniform_blocks[0].size = @sizeOf(VsParams);
+
+                shader_desc.uniform_blocks[1].stage = .FRAGMENT;
+                shader_desc.uniform_blocks[1].layout = .STD140;
+                shader_desc.uniform_blocks[1].msl_buffer_n = 1;
+                shader_desc.uniform_blocks[1].size = @sizeOf(FsParams);
             },
             else => @panic("PLATFORM NOT SUPPORTED!\n"),
         }
