@@ -3,27 +3,30 @@
 
 using namespace metal;
 
-struct vs_params
+struct VsParams
 {
-    float4x4 mvp;
+    float4x4 model;
+    float4x4 view;
+    float4x4 projection;
 };
 
-struct main_out
+struct MainOut
 {
     float4 color0 [[user(locn0)]];
     float4 position [[position]];
 };
 
-struct main_in
+struct MainIn
 {
     float4 position [[attribute(0)]];
     float4 color0 [[attribute(1)]];
 };
 
-vertex main_out _main(main_in in [[stage_in]], constant vs_params& vs_p [[buffer(0)]])
+vertex MainOut vs_main(MainIn in [[stage_in]], constant VsParams& params [[buffer(0)]])
 {
-    main_out out = {};
-    out.position = vs_p.mvp * in.position;
+    MainOut out = {};
+    float4x4 mvp = params.projection * params.view * params.model;
+    out.position = mvp * in.position;
     out.color0 = in.color0;
     return out;
 }

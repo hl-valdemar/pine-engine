@@ -3,6 +3,13 @@ const sokol = @import("sokol");
 
 const Mat4 = @import("math.zig").Mat4;
 
+pub const VsParams = struct {
+    model: Mat4,
+    // mvp: Mat4,
+    view: Mat4,
+    projection: Mat4,
+};
+
 pub const Shader = struct {
     allocator: std.mem.Allocator,
     label: []const u8,
@@ -32,12 +39,15 @@ pub const Shader = struct {
         switch (backend) {
             .METAL_MACOS => {
                 shader_desc.vertex_func.source = vs_source_copy;
-                shader_desc.vertex_func.entry = "_main";
+                shader_desc.vertex_func.entry = "vs_main";
+
                 shader_desc.fragment_func.source = fs_source_copy;
-                shader_desc.fragment_func.entry = "_main";
-                shader_desc.uniform_blocks[0].layout = .STD140;
+                shader_desc.fragment_func.entry = "fs_main";
+
                 shader_desc.uniform_blocks[0].stage = .VERTEX;
-                shader_desc.uniform_blocks[0].size = @sizeOf(Mat4);
+                shader_desc.uniform_blocks[0].layout = .STD140;
+                shader_desc.uniform_blocks[0].msl_buffer_n = 0;
+                shader_desc.uniform_blocks[0].size = @sizeOf(VsParams);
             },
             else => @panic("PLATFORM NOT SUPPORTED!\n"),
         }

@@ -166,9 +166,8 @@ const WorldState = struct {
 
             const dt = sokol.app.frameDuration();
 
-            const cube_node = self.scene.getNodeByUID(cube_node_id);
-            if (cube_node) |cube| {
-                cube.*.transform.rotate(
+            if (self.scene.getNodeByUID(cube_node_id)) |cube| {
+                cube.transform.rotate(
                     pine.math.Vec3.with(0, 1, 1),
                     @floatCast(dt * 0.5),
                 );
