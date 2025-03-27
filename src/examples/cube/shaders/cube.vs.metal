@@ -10,20 +10,20 @@ struct vs_params
 
 struct main_out
 {
-    float4 color [[user(locn0)]];
+    float4 color0 [[user(locn0)]];
     float4 position [[position]];
 };
 
 struct main_in
 {
     float4 position [[attribute(0)]];
-    float4 color [[attribute(1)]];
+    float4 color0 [[attribute(1)]];
 };
 
 vertex main_out _main(main_in in [[stage_in]], constant vs_params& vs_p [[buffer(0)]])
 {
     main_out out = {};
     out.position = vs_p.mvp * in.position;
-    out.color = in.color;
+    out.color0 = in.color0;
     return out;
 }

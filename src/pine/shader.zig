@@ -46,11 +46,11 @@ pub const Shader = struct {
         errdefer sokol.gfx.destroyShader(shader);
 
         const attr_position = 0;
-        const attr_color = 1;
+        const attr_color0 = 1;
         const layout: sokol.gfx.VertexLayoutState = blk: {
             var l = sokol.gfx.VertexLayoutState{};
             l.attrs[attr_position].format = .FLOAT3;
-            l.attrs[attr_color].format = .FLOAT4;
+            l.attrs[attr_color0].format = .FLOAT4;
             break :blk l;
         };
 
