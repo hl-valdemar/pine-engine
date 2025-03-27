@@ -7,7 +7,6 @@ const Material = @import("material.zig").Material;
 
 const transform = @import("transform.zig");
 const Transform = transform.Transform;
-const Rotation = transform.Rotation;
 
 const math = @import("math.zig");
 const Vec3 = math.Vec3;
@@ -72,6 +71,7 @@ pub const ResourceManager = struct {
         self: *ResourceManager,
         label: []const u8,
         vertices: []const f32,
+        normals: ?[]const f32,
         indices: []const u32,
     ) !UniqueIDType {
         const new_id = UniqueID.generateNext();
@@ -79,6 +79,7 @@ pub const ResourceManager = struct {
             self.allocator,
             label,
             vertices,
+            normals,
             indices,
         ));
         return new_id;

@@ -3,9 +3,9 @@ const std = @import("std");
 const Transform = @import("transform.zig").Transform;
 const Mesh = @import("mesh.zig").Mesh;
 const Material = @import("material.zig").Material;
-
 const UniqueID = @import("resource_manager.zig").UniqueID;
 const UniqueIDType = @import("resource_manager.zig").UniqueIDType;
+const Light = @import("lighting.zig").Light;
 
 pub const SceneVisitor = struct {
     visitFn: *const fn (self: *SceneVisitor, node: *SceneNode) void,
@@ -117,6 +117,8 @@ pub const SceneNode = struct {
 
     mesh_id: UniqueIDType = UniqueID.INVALID,
     material_id: UniqueIDType = UniqueID.INVALID,
+
+    light: ?Light = null,
 
     visible: bool = true,
 

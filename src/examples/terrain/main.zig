@@ -74,6 +74,7 @@ const WorldState = struct {
             const mesh_id = self.resource_manager.createMesh(
                 self.grid.label,
                 &self.grid.vertices,
+                null,
                 &self.grid.indices_filled,
             ) catch |err| {
                 std.log.err("failed to create terrain mesh: {}", .{err});

@@ -9,6 +9,7 @@ const Mesh = @import("mesh.zig").Mesh;
 const Shader = @import("shader.zig").Shader;
 const Material = @import("material.zig").Material;
 const Transform = @import("transform.zig").Transform;
+const LightManager = @import("lighting.zig").LightManager;
 
 const sc = @import("scene.zig");
 const Scene = sc.Scene;
@@ -27,19 +28,22 @@ pub const UniformSlots = struct {
 
 pub const Renderer = struct {
     allocator: std.mem.Allocator,
-    render_queue: std.ArrayList(RenderCommand),
     camera: Camera,
+    render_queue: std.ArrayList(RenderCommand),
+    light_manager: LightManager,
 
     pub fn init(allocator: std.mem.Allocator, camera: Camera) Renderer {
         return .{
             .allocator = allocator,
-            .render_queue = std.ArrayList(RenderCommand).init(allocator),
             .camera = camera,
+            .render_queue = std.ArrayList(RenderCommand).init(allocator),
+            .light_manager = LightManager.init(allocator),
         };
     }
 
     pub fn deinit(self: *const Renderer) void {
         self.render_queue.deinit();
+        self.light_manager.deinit();
     }
 
     pub fn renderScene(

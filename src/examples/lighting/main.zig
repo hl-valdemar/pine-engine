@@ -9,53 +9,127 @@ pub const std_options = std.Options{
 const cube_desc = struct {
     const label = "cube-example";
 
-    const vertices = [_]f32{
-        // positions      colors
-        //
-        // NSColor(red: 0.275, green: 0.259, blue: 0.369, alpha: 1)
-        -1.0, -1.0, -1.0, 0.275,  0.259, 0.369, 1.0,
-        1.0,  -1.0, -1.0, 0.275,  0.259, 0.369, 1.0,
-        1.0,  1.0,  -1.0, 0.275,  0.259, 0.369, 1.0,
-        -1.0, 1.0,  -1.0, 0.275,  0.259, 0.369, 1.0,
+    // for a cube, we need 36 vertices (6 faces * 2 triangles * 3 vertices)
+    var vertices = [_]f32{
+        // positions      // normals       // colors (RGBA)
 
-        // NSColor(red: 0.0824, green: 0.471, blue: 0.549, alpha: 1)
-        -1.0, -1.0, 1.0,  0.0824, 0.471, 0.549, 1.0,
-        1.0,  -1.0, 1.0,  0.0824, 0.471, 0.549, 1.0,
-        1.0,  1.0,  1.0,  0.0824, 0.471, 0.549, 1.0,
-        -1.0, 1.0,  1.0,  0.0824, 0.471, 0.549, 1.0,
+        // front face (positive z) - red
+        -0.5, -0.5, 0.5,  1.0, 0.0, 0.0, 1.0,
+        0.5,  -0.5, 0.5,  1.0, 0.0, 0.0, 1.0,
+        0.5,  0.5,  0.5,  1.0, 0.0, 0.0, 1.0,
+        0.5,  0.5,  0.5,  1.0, 0.0, 0.0, 1.0,
+        -0.5, 0.5,  0.5,  1.0, 0.0, 0.0, 1.0,
+        -0.5, -0.5, 0.5,  1.0, 0.0, 0.0, 1.0,
 
-        // NSColor(red: 0, green: 0.725, blue: 0.745, alpha: 1)
-        -1.0, -1.0, -1.0, 0.0,    0.725, 0.745, 1.0,
-        -1.0, 1.0,  -1.0, 0.0,    0.725, 0.745, 1.0,
-        -1.0, 1.0,  1.0,  0.0,    0.725, 0.745, 1.0,
-        -1.0, -1.0, 1.0,  0.0,    0.725, 0.745, 1.0,
+        // back face (negative z) - green
+        -0.5, -0.5, -0.5, 0.0, 1.0, 0.0, 1.0,
+        0.5,  -0.5, -0.5, 0.0, 1.0, 0.0, 1.0,
+        0.5,  0.5,  -0.5, 0.0, 1.0, 0.0, 1.0,
+        0.5,  0.5,  -0.5, 0.0, 1.0, 0.0, 1.0,
+        -0.5, 0.5,  -0.5, 0.0, 1.0, 0.0, 1.0,
+        -0.5, -0.5, -0.5, 0.0, 1.0, 0.0, 1.0,
 
-        // NSColor(red: 1, green: 0.933, blue: 0.8, alpha: 1)
-        1.0,  -1.0, -1.0, 1.0,    0.933, 0.8,   1.0,
-        1.0,  1.0,  -1.0, 1.0,    0.933, 0.8,   1.0,
-        1.0,  1.0,  1.0,  1.0,    0.933, 0.8,   1.0,
-        1.0,  -1.0, 1.0,  1.0,    0.933, 0.8,   1.0,
+        // left face (negative x) - blue
+        -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 1.0,
+        -0.5, -0.5, 0.5,  0.0, 0.0, 1.0, 1.0,
+        -0.5, 0.5,  0.5,  0.0, 0.0, 1.0, 1.0,
+        -0.5, 0.5,  0.5,  0.0, 0.0, 1.0, 1.0,
+        -0.5, 0.5,  -0.5, 0.0, 0.0, 1.0, 1.0,
+        -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 1.0,
 
-        // NSColor(red: 1, green: 0.69, blue: 0.639, alpha: 1)
-        -1.0, -1.0, -1.0, 1.0,    0.69,  0.639, 1.0,
-        -1.0, -1.0, 1.0,  1.0,    0.69,  0.639, 1.0,
-        1.0,  -1.0, 1.0,  1.0,    0.69,  0.639, 1.0,
-        1.0,  -1.0, -1.0, 1.0,    0.69,  0.639, 1.0,
+        // right face (positive x) - yellow
+        0.5,  -0.5, -0.5, 1.0, 1.0, 0.0, 1.0,
+        0.5,  -0.5, 0.5,  1.0, 1.0, 0.0, 1.0,
+        0.5,  0.5,  0.5,  1.0, 1.0, 0.0, 1.0,
+        0.5,  0.5,  0.5,  1.0, 1.0, 0.0, 1.0,
+        0.5,  0.5,  -0.5, 1.0, 1.0, 0.0, 1.0,
+        0.5,  -0.5, -0.5, 1.0, 1.0, 0.0, 1.0,
 
-        // NSColor(red: 1, green: 0.412, blue: 0.451, alpha: 1)
-        -1.0, 1.0,  -1.0, 1.0,    0.412, 0.451, 1.0,
-        -1.0, 1.0,  1.0,  1.0,    0.412, 0.451, 1.0,
-        1.0,  1.0,  1.0,  1.0,    0.412, 0.451, 1.0,
-        1.0,  1.0,  -1.0, 1.0,    0.412, 0.451, 1.0,
+        // bottom face (negative y) - magenta
+        -0.5, -0.5, -0.5, 1.0, 0.0, 1.0, 1.0,
+        0.5,  -0.5, -0.5, 1.0, 0.0, 1.0, 1.0,
+        0.5,  -0.5, 0.5,  1.0, 0.0, 1.0, 1.0,
+        0.5,  -0.5, 0.5,  1.0, 0.0, 1.0, 1.0,
+        -0.5, -0.5, 0.5,  1.0, 0.0, 1.0, 1.0,
+        -0.5, -0.5, -0.5, 1.0, 0.0, 1.0, 1.0,
+
+        // top face (positive y) - cyan
+        -0.5, 0.5,  -0.5, 0.0, 1.0, 1.0, 1.0,
+        0.5,  0.5,  -0.5, 0.0, 1.0, 1.0, 1.0,
+        0.5,  0.5,  0.5,  0.0, 1.0, 1.0, 1.0,
+        0.5,  0.5,  0.5,  0.0, 1.0, 1.0, 1.0,
+        -0.5, 0.5,  0.5,  0.0, 1.0, 1.0, 1.0,
+        -0.5, 0.5,  -0.5, 0.0, 1.0, 1.0, 1.0,
+    };
+
+    const normals = [_]f32{
+        // front face (positive z) - red
+        0.0,  0.0,  1.0,
+        0.0,  0.0,  1.0,
+        0.0,  0.0,  1.0,
+        0.0,  0.0,  1.0,
+        0.0,  0.0,  1.0,
+        0.0,  0.0,  1.0,
+
+        // back face (negative z) - green
+        0.0,  0.0,  -1.0,
+        0.0,  0.0,  -1.0,
+        0.0,  0.0,  -1.0,
+        0.0,  0.0,  -1.0,
+        0.0,  0.0,  -1.0,
+        0.0,  0.0,  -1.0,
+
+        // left face (negative x) - blue
+        -1.0, 0.0,  0.0,
+        -1.0, 0.0,  0.0,
+        -1.0, 0.0,  0.0,
+        -1.0, 0.0,  0.0,
+        -1.0, 0.0,  0.0,
+        -1.0, 0.0,  0.0,
+
+        // right face (positive x) - yellow
+        1.0,  0.0,  0.0,
+        1.0,  0.0,  0.0,
+        1.0,  0.0,  0.0,
+        1.0,  0.0,  0.0,
+        1.0,  0.0,  0.0,
+        1.0,  0.0,  0.0,
+
+        // bottom face (negative y) - magenta
+        0.0,  -1.0, 0.0,
+        0.0,  -1.0, 0.0,
+        0.0,  -1.0, 0.0,
+        0.0,  -1.0, 0.0,
+        0.0,  -1.0, 0.0,
+        0.0,  -1.0, 0.0,
+
+        // top face (positive y) - cyan
+        0.0,  1.0,  0.0,
+        0.0,  1.0,  0.0,
+        0.0,  1.0,  0.0,
+        0.0,  1.0,  0.0,
+        0.0,  1.0,  0.0,
+        0.0,  1.0,  0.0,
     };
 
     const indices = [_]u32{
-        0,  1,  2,  0,  2,  3,
-        6,  5,  4,  7,  6,  4,
-        8,  9,  10, 8,  10, 11,
-        14, 13, 12, 15, 14, 12,
-        16, 17, 18, 16, 18, 19,
-        22, 21, 20, 23, 22, 20,
+        0,  1,  2,
+        0,  2,  3,
+
+        6,  5,  4,
+        7,  6,  4,
+
+        8,  9,  10,
+        8,  10, 11,
+
+        14, 13, 12,
+        15, 14, 12,
+
+        16, 17, 18,
+        16, 18, 19,
+
+        22, 21, 20,
+        23, 22, 20,
     };
 };
 
@@ -98,9 +172,9 @@ const WorldState = struct {
 
     pub fn run(self: *WorldState) void {
         sokol.app.run(sokol.app.Desc{
-            .init_userdata_cb = sokolInitCubeExample,
-            .frame_userdata_cb = sokolFrameCubeExample,
-            .event_userdata_cb = sokolEventCubeExample,
+            .init_userdata_cb = sokolInitLightingExample,
+            .frame_userdata_cb = sokolFrameLightingExample,
+            .event_userdata_cb = sokolEventLightingExample,
             .user_data = self,
             .logger = .{ .func = sokol.log.func },
             .icon = .{ .sokol_default = true },
@@ -111,7 +185,7 @@ const WorldState = struct {
         });
     }
 
-    export fn sokolInitCubeExample(world_state: ?*anyopaque) void {
+    export fn sokolInitLightingExample(world_state: ?*anyopaque) void {
         if (world_state) |state| {
             const self: *WorldState = @alignCast(@ptrCast(state));
 
@@ -123,7 +197,7 @@ const WorldState = struct {
             const cube_mesh_id = self.resource_manager.createMesh(
                 cube_desc.label,
                 &cube_desc.vertices,
-                null,
+                &cube_desc.normals,
                 &cube_desc.indices,
             ) catch |err| {
                 std.log.err("failed to create cube mesh: {}", .{err});
@@ -161,7 +235,7 @@ const WorldState = struct {
         }
     }
 
-    export fn sokolFrameCubeExample(world_state: ?*anyopaque) void {
+    export fn sokolFrameLightingExample(world_state: ?*anyopaque) void {
         if (world_state) |state| {
             const self: *WorldState = @alignCast(@ptrCast(state));
 
@@ -179,7 +253,7 @@ const WorldState = struct {
         }
     }
 
-    export fn sokolEventCubeExample(ev: [*c]const sokol.app.Event, world_state: ?*anyopaque) void {
+    export fn sokolEventLightingExample(ev: [*c]const sokol.app.Event, world_state: ?*anyopaque) void {
         if (world_state) |state| {
             const self: *WorldState = @alignCast(@ptrCast(state));
             _ = self;
