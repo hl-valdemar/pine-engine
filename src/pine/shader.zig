@@ -1,7 +1,19 @@
 const std = @import("std");
 const sokol = @import("sokol");
 
-const Mat4 = @import("math.zig").Mat4;
+const math = @import("math.zig");
+const Mat4 = math.Mat4;
+const Vec4 = math.Vec4;
+
+pub const VsParams = struct {
+    model: Mat4,
+    view: Mat4,
+    projection: Mat4,
+};
+
+pub const FsParams = struct {
+    color_intensities: Vec4,
+};
 
 pub const Shader = struct {
     allocator: std.mem.Allocator,
@@ -32,12 +44,20 @@ pub const Shader = struct {
         switch (backend) {
             .METAL_MACOS => {
                 shader_desc.vertex_func.source = vs_source_copy;
-                shader_desc.vertex_func.entry = "_main";
+                shader_desc.vertex_func.entry = "vs_main";
+
                 shader_desc.fragment_func.source = fs_source_copy;
-                shader_desc.fragment_func.entry = "_main";
-                shader_desc.uniform_blocks[0].layout = .STD140;
+                shader_desc.fragment_func.entry = "fs_main";
+
                 shader_desc.uniform_blocks[0].stage = .VERTEX;
-                shader_desc.uniform_blocks[0].size = @sizeOf(Mat4);
+                shader_desc.uniform_blocks[0].layout = .STD140;
+                shader_desc.uniform_blocks[0].msl_buffer_n = 0;
+                shader_desc.uniform_blocks[0].size = @sizeOf(VsParams);
+
+                shader_desc.uniform_blocks[1].stage = .FRAGMENT;
+                shader_desc.uniform_blocks[1].layout = .STD140;
+                shader_desc.uniform_blocks[1].msl_buffer_n = 1;
+                shader_desc.uniform_blocks[1].size = @sizeOf(FsParams);
             },
             else => @panic("PLATFORM NOT SUPPORTED!\n"),
         }
@@ -45,12 +65,12 @@ pub const Shader = struct {
         const shader = sokol.gfx.makeShader(shader_desc);
         errdefer sokol.gfx.destroyShader(shader);
 
-        const ATTR_position = 0;
-        const ATTR_color0 = 1;
+        const attr_position = 0;
+        const attr_color0 = 1;
         const layout: sokol.gfx.VertexLayoutState = blk: {
             var l = sokol.gfx.VertexLayoutState{};
-            l.attrs[ATTR_position].format = .FLOAT3;
-            l.attrs[ATTR_color0].format = .FLOAT4;
+            l.attrs[attr_position].format = .FLOAT3;
+            l.attrs[attr_color0].format = .FLOAT4;
             break :blk l;
         };
 

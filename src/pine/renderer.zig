@@ -6,10 +6,14 @@ const plog = @import("logging.zig").log;
 const ResourceManager = @import("resource_manager.zig").ResourceManager;
 const Camera = @import("camera.zig").Camera;
 const Mesh = @import("mesh.zig").Mesh;
-const Shader = @import("shader.zig").Shader;
 const Material = @import("material.zig").Material;
 const Transform = @import("transform.zig").Transform;
 const LightManager = @import("lighting.zig").LightManager;
+
+const shd = @import("shader.zig");
+const Shader = shd.Shader;
+const VsParams = shd.VsParams;
+const FsParams = shd.FsParams;
 
 const sc = @import("scene.zig");
 const Scene = sc.Scene;
@@ -18,12 +22,14 @@ const SceneVisitor = sc.SceneVisitor;
 
 const math = @import("math.zig");
 const Vec3 = math.Vec3;
+const Vec4 = math.Vec4;
 const Mat4 = math.Mat4;
 
 const UniqueID = @import("resource_manager.zig").UniqueID;
 
 pub const UniformSlots = struct {
-    pub const MODEL_VIEW_PROJECTION = 0;
+    pub const VS_PARAMS = 0;
+    pub const FS_PARAMS = 1;
 };
 
 pub const Renderer = struct {
@@ -109,9 +115,18 @@ pub const Renderer = struct {
         sokol.gfx.applyPipeline(shader.pipeline);
         sokol.gfx.applyBindings(cmd.mesh.bindings);
 
-        const mvp = self.camera.computeMVP(&cmd.transform);
+        const vs_params = VsParams{
+            .model = cmd.transform.getModelMatrix(),
+            .view = self.camera.view,
+            .projection = self.camera.projection,
+        };
+        const fs_params = FsParams{
+            .color_intensities = Vec4.with(1, 1, 1, 1), // NOTE: just for debugging.
+        };
 
-        sokol.gfx.applyUniforms(UniformSlots.MODEL_VIEW_PROJECTION, sokol.gfx.asRange(&mvp));
+        sokol.gfx.applyUniforms(UniformSlots.VS_PARAMS, sokol.gfx.asRange(&vs_params));
+
+        sokol.gfx.applyUniforms(UniformSlots.FS_PARAMS, sokol.gfx.asRange(&fs_params));
 
         const first_element = 0;
         const element_count: u32 = @intCast(cmd.mesh.indices.len);
@@ -142,8 +157,6 @@ const RenderVisitor = struct {
     }
 
     pub fn visitNode(self: *RenderVisitor, node: *SceneNode) void {
-        if (!node.visible) return;
-
         if (node.mesh_id != UniqueID.INVALID and node.material_id != UniqueID.INVALID) {
             const mesh = if (self.resource_manager.getMesh(node.mesh_id)) |m| blk: {
                 break :blk m;

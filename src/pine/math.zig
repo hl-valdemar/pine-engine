@@ -81,6 +81,98 @@ pub const Vec3 = extern struct {
     }
 };
 
+pub const Vec4 = extern struct {
+    x: f32 = 0,
+    y: f32 = 0,
+    z: f32 = 0,
+    w: f32 = 0,
+
+    pub fn zeros() Vec4 {
+        return Vec4{
+            .x = 0.0,
+            .y = 0.0,
+            .z = 0.0,
+            .w = 0.0,
+        };
+    }
+
+    pub fn ones() Vec4 {
+        return Vec4{
+            .x = 1.0,
+            .y = 1.0,
+            .z = 1.0,
+            .w = 1.0,
+        };
+    }
+
+    pub fn with(x: f32, y: f32, z: f32, w: f32) Vec4 {
+        return Vec4{
+            .x = x,
+            .y = y,
+            .z = z,
+            .w = w,
+        };
+    }
+
+    pub fn len(v: Vec4) f32 {
+        return math.sqrt(Vec4.dot(v, v));
+    }
+
+    pub fn add(a: Vec4, b: Vec4) Vec4 {
+        return Vec4{
+            .x = a.x + b.x,
+            .y = a.y + b.y,
+            .z = a.z + b.z,
+            .w = a.w + b.w,
+        };
+    }
+
+    pub fn sub(a: Vec4, b: Vec4) Vec4 {
+        return Vec4{
+            .x = a.x - b.x,
+            .y = a.y - b.y,
+            .z = a.z - b.z,
+            .w = a.w - b.w,
+        };
+    }
+
+    pub fn scale(v: Vec4, s: f32) Vec4 {
+        return Vec4{
+            .x = v.x * s,
+            .y = v.y * s,
+            .z = v.z * s,
+            .w = v.w * s,
+        };
+    }
+
+    pub fn mul(a: Vec4, b: Vec4) Vec4 {
+        return Vec4{
+            .x = a.x * b.x,
+            .y = a.y * b.y,
+            .z = a.z * b.z,
+            .w = a.w * b.w,
+        };
+    }
+
+    pub fn norm(v: Vec4) Vec4 {
+        const l = Vec4.len(v);
+        if (l != 0.0) {
+            return Vec4{
+                .x = v.x / l,
+                .y = v.y / l,
+                .z = v.z / l,
+                .w = v.w / l,
+            };
+        } else {
+            return Vec4.zeros();
+        }
+    }
+
+    pub fn dot(a: Vec4, b: Vec4) f32 {
+        return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+    }
+};
+
 pub const Mat4 = extern struct {
     m: [4][4]f32,
 

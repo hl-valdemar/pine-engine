@@ -7,7 +7,7 @@ pub const std_options = std.Options{
 };
 
 const cube_desc = struct {
-    const label = "cube-example";
+    const label = "lighting-example-cube";
 
     // for a cube, we need 36 vertices (6 faces * 2 triangles * 3 vertices)
     var vertices = [_]f32{
@@ -181,7 +181,7 @@ const WorldState = struct {
             .sample_count = 4,
             .width = 4 * 300,
             .height = 3 * 300,
-            .window_title = "Pine: Cube Example",
+            .window_title = "Pine: Lighting Example",
         });
     }
 
@@ -241,9 +241,8 @@ const WorldState = struct {
 
             const dt = sokol.app.frameDuration();
 
-            const cube_node = self.scene.getNodeByUID(cube_node_id);
-            if (cube_node) |cube| {
-                cube.*.transform.rotate(
+            if (self.scene.getNodeByUID(cube_node_id)) |cube| {
+                cube.transform.rotate(
                     pine.math.Vec3.with(0, 1, 1),
                     @floatCast(dt * 0.5),
                 );

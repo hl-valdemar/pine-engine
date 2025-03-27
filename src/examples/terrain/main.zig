@@ -118,9 +118,8 @@ const WorldState = struct {
 
             const dt = sokol.app.frameDuration();
 
-            const terrain_node = self.scene.getNodeByUID(terrain_node_id);
-            if (terrain_node) |terrain| {
-                terrain.*.transform.rotate(
+            if (self.scene.getNodeByUID(terrain_node_id)) |terrain| {
+                terrain.transform.rotate(
                     pine.math.Vec3.up(),
                     @floatCast(dt * 0.25),
                 );
