@@ -5,6 +5,12 @@ const math = @import("math.zig");
 const Mat4 = math.Mat4;
 const Vec4 = math.Vec4;
 
+pub const AttributeSlots = struct {
+    pub const POSITION = 0;
+    pub const NORMALS = 1;
+    pub const COLOR_0 = 2;
+};
+
 pub const VsParams = struct {
     model: Mat4,
     view: Mat4,
@@ -65,12 +71,16 @@ pub const Shader = struct {
         const shader = sokol.gfx.makeShader(shader_desc);
         errdefer sokol.gfx.destroyShader(shader);
 
-        const attr_position = 0;
-        const attr_color0 = 1;
         const layout: sokol.gfx.VertexLayoutState = blk: {
             var l = sokol.gfx.VertexLayoutState{};
-            l.attrs[attr_position].format = .FLOAT3;
-            l.attrs[attr_color0].format = .FLOAT4;
+            l.attrs[AttributeSlots.POSITION].format = .FLOAT3;
+            l.attrs[AttributeSlots.POSITION].buffer_index = 0;
+
+            l.attrs[AttributeSlots.NORMALS].format = .FLOAT3;
+            l.attrs[AttributeSlots.NORMALS].buffer_index = 1;
+
+            l.attrs[AttributeSlots.COLOR_0].format = .FLOAT4;
+            l.attrs[AttributeSlots.COLOR_0].buffer_index = 0;
             break :blk l;
         };
 

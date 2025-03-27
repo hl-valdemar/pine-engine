@@ -102,7 +102,6 @@ pub const Mesh = struct {
             .indices = i_copy,
 
             .bindings = bindings,
-
             .label = label_prefix,
 
             .vbuf = vbuf,
