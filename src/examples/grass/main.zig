@@ -13,7 +13,6 @@ pub const std_options = std.Options{
 
 const WorldState = struct {
     var terrain_node_id: pine.UniqueIDType = pine.UniqueID.INVALID;
-    var grass_node_id: pine.UniqueIDType = pine.UniqueID.INVALID;
 
     allocator: std.mem.Allocator,
     resource_manager: pine.ResourceManager,
@@ -132,6 +131,7 @@ const WorldState = struct {
                 @panic("FAILED TO CREATE GRASS MATERIAL!\n");
             };
 
+            // create the terrain node and add it to the root of the scene
             const terrain_node = self.scene.createNode("terrain") catch {
                 @panic("FAILED TO CREATE TERRAIN NODE!\n");
             };
@@ -142,15 +142,15 @@ const WorldState = struct {
             };
             terrain_node_id = terrain_node.id;
 
+            // create the grass node and add it as a child to the terrain node
             const grass_node = self.scene.createNode("grass") catch {
                 @panic("FAILED TO CREATE GRASS NODE!\n");
             };
             grass_node.mesh_id = grass_mesh_id;
             grass_node.material_id = grass_material_id;
-            self.scene.root.addChild(grass_node) catch {
+            terrain_node.addChild(grass_node) catch {
                 @panic("FAILED TO ADD GRASS NODE TO SCENE!\n");
             };
-            grass_node_id = grass_node.id;
         }
     }
 
@@ -161,17 +161,13 @@ const WorldState = struct {
             const dt = sokol.app.frameDuration();
             const rotational_constant = 0.25;
 
-            const terrain_node = self.scene.getNodeByUID(terrain_node_id);
-            if (terrain_node) |terrain| {
-                terrain.transform.rotate(pine.math.Vec3.up(), @floatCast(dt * rotational_constant));
+            if (self.scene.getNodeByUID(terrain_node_id)) |terrain| {
+                terrain.transform.rotate(
+                    pine.math.Vec3.up(),
+                    @floatCast(dt * rotational_constant),
+                );
             }
 
-            const grass_node = self.scene.getNodeByUID(grass_node_id);
-            if (grass_node) |grass| {
-                grass.transform.rotate(pine.math.Vec3.up(), @floatCast(dt * rotational_constant));
-            }
-
-            // apply rotation
             self.renderer.renderScene(&self.scene, &self.resource_manager);
         }
     }
