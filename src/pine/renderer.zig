@@ -8,7 +8,10 @@ const Camera = @import("camera.zig").Camera;
 const Mesh = @import("mesh.zig").Mesh;
 const Material = @import("material.zig").Material;
 const Transform = @import("transform.zig").Transform;
-const LightManager = @import("lighting.zig").LightManager;
+
+const lighting = @import("lighting.zig");
+const LightManager = lighting.LightManager;
+const LightCollector = lighting.LightCollector;
 
 const shd = @import("shader.zig");
 const Shader = shd.Shader;
@@ -62,14 +65,17 @@ pub const Renderer = struct {
         // clear and collect render commands from scene graph
         self.render_queue.clearRetainingCapacity();
 
-        var render_visitor = RenderVisitor.init(self, resource_manager);
+        // first pass - collect lights
+        var light_collector = LightCollector.init(self, resource_manager);
+        scene.accept(&light_collector.visitor);
 
+        // second pass - build render queue
+        var render_visitor = RenderVisitor.init(self, resource_manager);
         const visibility_filter = struct {
             fn filter(node: *SceneNode) bool {
                 return node.visible;
             }
         }.filter;
-
         scene.acceptFiltered(&render_visitor.visitor, visibility_filter);
 
         // clear screen
@@ -120,12 +126,15 @@ pub const Renderer = struct {
             .view = self.camera.view,
             .projection = self.camera.projection,
         };
+
+        const light = self.light_manager.directional_lights.items[0].light;
         const fs_params = FsParams{
-            .color_intensities = Vec4.with(1, 1, 1, 1), // NOTE: just for debugging.
+            .light_color = light.color,
+            .light_direction = light.direction,
+            .view_position = self.camera.position,
         };
 
         sokol.gfx.applyUniforms(UniformSlots.VS_PARAMS, sokol.gfx.asRange(&vs_params));
-
         sokol.gfx.applyUniforms(UniformSlots.FS_PARAMS, sokol.gfx.asRange(&fs_params));
 
         const first_element = 0;

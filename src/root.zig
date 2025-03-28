@@ -6,6 +6,7 @@ pub const Camera = camera.Camera;
 pub const Scene = scene.Scene;
 pub const UniqueIDType = resource_manager.UniqueIDType;
 pub const UniqueID = resource_manager.UniqueID;
+pub const Light = lighting.Light;
 
 pub const logging = @import("pine/logging.zig");
 pub const math = @import("pine/math.zig");
@@ -19,6 +20,7 @@ const resource_manager = @import("pine/resource_manager.zig");
 const renderer = @import("pine/renderer.zig");
 const camera = @import("pine/camera.zig");
 const scene = @import("pine/scene.zig");
+const lighting = @import("pine/lighting.zig");
 
 //-- testing --//
 

@@ -1,9 +1,12 @@
 const std = @import("std");
 const sokol = @import("sokol");
 
+const Light = @import("lighting.zig").Light;
+
 const math = @import("math.zig");
 const Mat4 = math.Mat4;
 const Vec4 = math.Vec4;
+const Vec3 = math.Vec3;
 
 pub const AttributeSlots = struct {
     pub const POSITION = 0;
@@ -18,7 +21,9 @@ pub const VsParams = struct {
 };
 
 pub const FsParams = struct {
-    color_intensities: Vec4,
+    light_color: Vec3,
+    light_direction: Vec3,
+    view_position: Vec3,
 };
 
 pub const Shader = struct {
@@ -90,6 +95,7 @@ pub const Shader = struct {
             .layout = layout,
             .index_type = .UINT32,
             .cull_mode = .NONE,
+            .face_winding = .CW,
             .depth = .{
                 .write_enabled = true,
                 .compare = .LESS_EQUAL,

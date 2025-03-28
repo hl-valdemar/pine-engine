@@ -20,7 +20,7 @@ pub const Light = struct {
     color: Vec3,
     intensity: f32,
 
-    direction: Vec3 = Vec3.zeros(),
+    direction: Vec3 = Vec3.up(),
 
     pub fn init(
         light_type: LightType,

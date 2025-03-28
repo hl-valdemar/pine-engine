@@ -15,7 +15,7 @@ pub const Material = struct {
     shader_id: UniqueIDType = UniqueID.INVALID,
 
     // PBR material properties
-    albedo: Vec3 = Vec3.with(1.0, 1.0, 1.0),
+    albedo: Vec3 = Vec3.ones(),
     metallic: f32 = 0.0,
     roughness: f32 = 0.5,
     ambient_occlusion: f32 = 1.0,

@@ -182,6 +182,38 @@ const WorldState = struct {
                 .logger = .{ .func = sokol.log.func },
             });
 
+            var sun_node = self.scene.createNode("sun-light") catch {
+                @panic("FAILED TO CREATE SUN LIGHT NODE!\n");
+            };
+            const sun_light = pine.Light.initDirectional(
+                pine.math.Vec3.with(0, 1, 0),
+                // pine.math.Vec3.with(1, 0.95, 0.8),
+                pine.math.Vec3.with(1, 1, 1),
+                1,
+            );
+            sun_node.light = sun_light;
+            self.scene.root.addChild(sun_node) catch {
+                @panic("FAILED TO ADD SUN LIGHT NODE TO SCENE!\n");
+            };
+
+            const pbr_shader_id = self.resource_manager.createShader(
+                "pbr-shader",
+                @embedFile("shaders/lighting.vs.metal"),
+                @embedFile("shaders/lighting.fs.metal"),
+                sokol.gfx.queryBackend(),
+            ) catch |err| {
+                std.log.err("failed to create PBR shader: {}", .{err});
+                @panic("FAILED TO CREATE PBR SHADER!\n");
+            };
+
+            const pbr_material_id = self.resource_manager.createMaterial(
+                "pbr-material",
+                pbr_shader_id,
+            ) catch |err| {
+                std.log.err("failed to create PBR material: {}", .{err});
+                @panic("FAILED TO CREATE PBR MATERIAL!\n");
+            };
+
             const cube_mesh_id = self.resource_manager.createMesh(
                 cube_desc.label,
                 &cube_desc.vertices,
@@ -192,33 +224,14 @@ const WorldState = struct {
                 @panic("FAILED TO CREATE CUBE MESH!\n");
             };
 
-            const cube_shader_id = self.resource_manager.createShader(
-                cube_desc.label,
-                @embedFile("shaders/cube.vs.metal"),
-                @embedFile("shaders/cube.fs.metal"),
-                sokol.gfx.queryBackend(),
-            ) catch |err| {
-                std.log.err("failed to create cube shader: {}", .{err});
-                @panic("FAILED TO CREATE CUBE SHADER!\n");
-            };
-
-            const cube_material_id = self.resource_manager.createMaterial(
-                cube_desc.label,
-                cube_shader_id,
-            ) catch |err| {
-                std.log.err("failed to create cube material: {}", .{err});
-                @panic("FAILED TO CREATE CUBE MATERIAL!\n");
-            };
-
-            var cube_node = self.scene.createNode(cube_desc.label) catch {
-                @panic("FAILED TO CREATE CUBE NODE!\n");
+            var cube_node = self.scene.createNode("pbr-cube") catch {
+                @panic("FAILED TO CREATE PBR CUBE NODE!\n");
             };
             cube_node.mesh_id = cube_mesh_id;
-            cube_node.material_id = cube_material_id;
+            cube_node.material_id = pbr_material_id;
             self.scene.root.addChild(cube_node) catch {
-                @panic("FAILED TO ADD CUBE NODE TO SCENE!\n");
+                @panic("FAILED TO ADD PBR CUBE NODE TO SCENE!\n");
             };
-
             cube_node_id = cube_node.id;
         }
     }

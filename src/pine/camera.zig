@@ -11,6 +11,7 @@ pub const Camera = struct {
     aspect: f32,
     near: f32,
     far: f32,
+    position: Vec3,
     view: Mat4,
     projection: Mat4,
 
@@ -20,6 +21,7 @@ pub const Camera = struct {
             .aspect = aspect,
             .near = near,
             .far = far,
+            .position = eye,
             .view = Mat4.lookat(eye, target, Vec3.up()),
             .projection = Mat4.persp(fov, aspect, near, far),
         };
@@ -34,9 +36,9 @@ pub const Camera = struct {
         self.aspect = aspect;
     }
 
-    pub fn computeMVP(camera: *const Camera, transform: *const Transform) Mat4 {
-        const model_matrix = transform.getModelMatrix();
-        const view_projection = Mat4.mul(camera.projection, camera.view);
-        return Mat4.mul(view_projection, model_matrix);
-    }
+    // pub fn computeMVP(camera: *const Camera, transform: *const Transform) Mat4 {
+    //     const model_matrix = transform.getModelMatrix();
+    //     const view_projection = Mat4.mul(camera.projection, camera.view);
+    //     return Mat4.mul(view_projection, model_matrix);
+    // }
 };
