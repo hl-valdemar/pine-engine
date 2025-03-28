@@ -41,18 +41,4 @@ fragment float4 fs_main(MainIn in [[stage_in]], constant FsParams& params [[buff
     float3 result = (ambient + diffuse + specular) * in.color0.rgb;
 
     return float4(result, in.color0.a);
-
-    //// diffuse lighting
-    //float3 light_dir = normalize(params.light_direction);
-    //float diff = max(dot(normal, light_dir), 0.0);
-    //float3 diffuse = diff * float3(1.0, 1.0, 1.0) * in.color0.rgb;
-
-    //// specular lighting (blinn-phong)
-    //float3 view_dir = normalize(params.view_position - in.world_pos);
-    //float3 halfway_dir = normalize(light_dir + view_dir);
-    //float spec = pow(max(dot(normal, halfway_dir), 0.0), 32.0);
-    //float3 specular = spec * float3(0.5, 0.5, 0.5);
-
-    //// combine lighting components
-    //float3 result = ambient + diffuse; //  + specular;
 }
