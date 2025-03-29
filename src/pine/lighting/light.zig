@@ -16,16 +16,13 @@ pub const LightType = enum {
 };
 
 pub const LightProperties = extern struct {
-    color: Vec3 align(32) = Vec3.ones(),
-    intensity: f32 = 1.0,
+    color: Vec3 align(16) = Vec3.ones(),
+    intensity: f32 align(16) = 1,
 };
 
 pub const Light = struct {
     light_type: LightType,
     properties: LightProperties,
-
-    // NOTE: just for directional light (properly a better way)
-    direction: Vec3 = Vec3.up(),
 
     pub fn init(
         light_type: LightType,
@@ -46,8 +43,9 @@ pub const Light = struct {
         color: Vec3,
         intensity: f32,
     ) Light {
-        var light = Light.init(.Directional, color, intensity);
-        light.direction = direction.norm();
+        _ = direction;
+        const light = Light.init(.Directional, color, intensity);
+        // light.properties.direction = direction.norm();
         return light;
     }
 };

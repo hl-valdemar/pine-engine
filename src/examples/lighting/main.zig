@@ -186,7 +186,7 @@ const WorldState = struct {
                 @panic("FAILED TO CREATE SUN LIGHT NODE!\n");
             };
             const sun_light = pine.Light.initDirectional(
-                pine.math.Vec3.with(0, 1, 0),
+                pine.math.Vec3.with(0, -1, 0),
                 // pine.math.Vec3.with(1, 0.95, 0.8),
                 pine.math.Vec3.with(1, 1, 1),
                 1,

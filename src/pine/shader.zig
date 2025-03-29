@@ -21,8 +21,8 @@ pub const VsParams = struct {
 };
 
 pub const FsParams = extern struct {
-    light_properties: LightProperties align(32),
-    camera_pos: Vec3 align(32),
+    light_properties: LightProperties,
+    camera_pos: Vec3 align(16),
 };
 
 pub const Shader = struct {
