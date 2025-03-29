@@ -51,49 +51,37 @@ const cube_desc = struct {
     };
 
     const normals = [_]f32{
-        // front face (positive z) - red
-        0,  0,  1,
-        0,  0,  1,
-        0,  0,  1,
-        0,  0,  1,
-        0,  0,  1,
-        0,  0,  1,
-
-        // back face (negative z) - green
-        0,  0,  -1,
-        0,  0,  -1,
+        // Back face (negative z)
         0,  0,  -1,
         0,  0,  -1,
         0,  0,  -1,
         0,  0,  -1,
 
-        // left face (negative x) - blue
-        -1, 0,  0,
-        -1, 0,  0,
+        // Front face (positive z)
+        0,  0,  1,
+        0,  0,  1,
+        0,  0,  1,
+        0,  0,  1,
+
+        // Left face (negative x)
         -1, 0,  0,
         -1, 0,  0,
         -1, 0,  0,
         -1, 0,  0,
 
-        // right face (positive x) - yellow
-        1,  0,  0,
-        1,  0,  0,
+        // Right face (positive x)
         1,  0,  0,
         1,  0,  0,
         1,  0,  0,
         1,  0,  0,
 
-        // bottom face (negative y) - magenta
-        0,  -1, 0,
-        0,  -1, 0,
+        // Bottom face (negative y)
         0,  -1, 0,
         0,  -1, 0,
         0,  -1, 0,
         0,  -1, 0,
 
-        // top face (positive y) - cyan
-        0,  1,  0,
-        0,  1,  0,
+        // Top face (positive y)
         0,  1,  0,
         0,  1,  0,
         0,  1,  0,
@@ -186,8 +174,8 @@ const WorldState = struct {
                 @panic("FAILED TO CREATE SUN LIGHT NODE!\n");
             };
             const sun_light = pine.Light.initDirectional(
-                pine.math.Vec3.with(0, -1, 0),
-                // pine.math.Vec3.with(1, 0.95, 0.8),
+                pine.math.Vec3.with(0, -1, -0.5),
+                // pine.math.Vec3.with(1, 0.95, 0.8), // soft lighting
                 pine.math.Vec3.with(1, 1, 1),
                 1,
             );

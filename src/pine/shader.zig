@@ -14,10 +14,10 @@ pub const AttributeSlots = struct {
     pub const COLOR_0 = 2;
 };
 
-pub const VsParams = struct {
-    model: Mat4,
-    view: Mat4,
-    projection: Mat4,
+pub const VsParams = extern struct {
+    model: Mat4 align(16),
+    view: Mat4 align(16),
+    projection: Mat4 align(16),
 };
 
 pub const FsParams = extern struct {

@@ -13,8 +13,8 @@ struct VsParams
 struct MainOut {
     float4 position [[position]];
     float4 color0 [[user(locn0)]];
-    float3 frag_pos [[user(locn1)]];
-    float3 normal [[user(locn2)]];
+    float3 normal [[user(locn1)]];
+    float3 frag_pos [[user(locn2)]];
 };
 
 struct MainIn {
@@ -39,7 +39,7 @@ vertex MainOut vs_main(MainIn in [[stage_in]], constant VsParams& params [[buffe
         params.model[1].xyz, 
         params.model[2].xyz
     );
-    out.normal = normalize(normal_matrix * in.normal);
+    out.normal = normalize(normal_matrix * float4(in.normal, 0).xyz);
 
     out.color0 = in.color0;
     

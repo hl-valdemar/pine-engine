@@ -3,9 +3,11 @@ const plog = @import("../logging.zig").log;
 
 const Vec3 = @import("../math.zig").Vec3;
 const Transform = @import("../transform.zig").Transform;
-const UniqueIDType = @import("../resource_manager.zig").UniqueIDType;
-const ResourceManager = @import("../resource_manager.zig").ResourceManager;
 const Renderer = @import("../renderer.zig").Renderer;
+
+const resource_manager = @import("../resource_manager.zig");
+const UniqueIDType = resource_manager.UniqueIDType;
+const ResourceManager = resource_manager.ResourceManager;
 
 const scene = @import("../scene.zig");
 const SceneVisitor = scene.SceneVisitor;
@@ -44,9 +46,8 @@ pub const Light = struct {
         color: Vec3,
         intensity: f32,
     ) Light {
-        _ = direction;
-        const light = Light.init(.Directional, color, intensity);
-        // light.properties.direction = direction.norm();
+        var light = Light.init(.Directional, color, intensity);
+        light.properties.direction = direction.norm();
         return light;
     }
 };
