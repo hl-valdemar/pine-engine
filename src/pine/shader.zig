@@ -1,7 +1,7 @@
 const std = @import("std");
 const sokol = @import("sokol");
 
-const Light = @import("lighting/light.zig").Light;
+const LightProperties = @import("lighting/light.zig").LightProperties;
 
 const math = @import("math.zig");
 const Mat4 = math.Mat4;
@@ -20,10 +20,9 @@ pub const VsParams = struct {
     projection: Mat4,
 };
 
-pub const FsParams = struct {
-    light_color: Vec3,
-    light_direction: Vec3,
-    view_position: Vec3,
+pub const FsParams = extern struct {
+    light_properties: LightProperties align(32),
+    camera_pos: Vec3 align(32),
 };
 
 pub const Shader = struct {

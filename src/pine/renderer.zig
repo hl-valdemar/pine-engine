@@ -11,6 +11,7 @@ const Transform = @import("transform.zig").Transform;
 
 const LightManager = @import("lighting/light_manager.zig").LightManager;
 const LightCollector = @import("lighting/light_collector.zig").LightCollector;
+const LightProperties = @import("lighting/light.zig").LightProperties;
 
 const shd = @import("shader.zig");
 const Shader = shd.Shader;
@@ -126,11 +127,16 @@ pub const Renderer = struct {
             .projection = self.camera.projection,
         };
 
-        const light = self.light_manager.directional_lights.items[0].light;
+        const light_entry = self.light_manager.directional_lights.getLastOrNull();
+        const light_properties = if (light_entry) |entry| blk: {
+            break :blk entry.light.properties;
+        } else blk: {
+            break :blk null;
+        };
+
         const fs_params = FsParams{
-            .light_color = light.color,
-            .light_direction = light.direction,
-            .view_position = self.camera.position,
+            .light_properties = light_properties orelse LightProperties{},
+            .camera_pos = self.camera.position,
         };
 
         sokol.gfx.applyUniforms(UniformSlots.VS_PARAMS, sokol.gfx.asRange(&vs_params));

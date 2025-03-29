@@ -13,7 +13,7 @@ struct VsParams
 struct MainOut {
     float4 position [[position]];
     float4 color0 [[user(locn0)]];
-    float3 world_pos [[user(locn1)]];
+    float3 frag_pos [[user(locn1)]];
     float3 normal [[user(locn2)]];
 };
 
@@ -31,7 +31,7 @@ vertex MainOut vs_main(MainIn in [[stage_in]], constant VsParams& params [[buffe
     out.position = mvp * float4(in.position, 1.0);
 
     // transform position and normal for lighting
-    out.world_pos = (params.model * float4(in.position, 1.0)).xyz;
+    out.frag_pos = (params.model * float4(in.position, 1.0)).xyz;
     
     // normal matrix (transpose of inverse of model matrix, simplified for uniform scaling)
     float3x3 normal_matrix = float3x3(

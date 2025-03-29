@@ -4,7 +4,7 @@
 using namespace metal;
 
 struct FsParams {
-    float4 color_intensities;
+    // todo
 };
 
 struct MainOut
@@ -20,6 +20,6 @@ struct MainIn
 fragment MainOut fs_main(MainIn in [[stage_in]], constant FsParams& params [[buffer(1)]])
 {
     MainOut out = {};
-    out.color0 = in.color0 * params.color_intensities;
+    out.color0 = in.color0;
     return out;
 }
