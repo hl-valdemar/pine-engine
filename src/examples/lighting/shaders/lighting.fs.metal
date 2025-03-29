@@ -5,8 +5,7 @@ using namespace metal;
 
 struct LightProperties
 {
-    //float3 direction;
-    //float _pad1;
+    float3 direction;
     float3 color;
     float intensity;
 };
@@ -26,8 +25,7 @@ struct MainIn
 
 fragment float4 fs_main(MainIn in [[stage_in]], constant FsParams& params [[buffer(1)]])
 {
-    //float3 light_dir = normalize(-params.light_properties.direction * params.light_properties.intensity);
-    float3 light_dir = normalize(-float3(0.0, -1.0, 0.0) * params.light_properties.intensity);
+    float3 light_dir = normalize(-params.light_properties.direction * params.light_properties.intensity);
     float3 light_color = params.light_properties.color;
 
     // ambient
@@ -43,7 +41,7 @@ fragment float4 fs_main(MainIn in [[stage_in]], constant FsParams& params [[buff
     float3 view_dir = normalize(params.camera_pos - in.frag_pos);
     float3 halfway_dir = normalize(light_dir + view_dir);
     float spec = pow(max(dot(normal, halfway_dir), 0.0), 64.0); // higher exponent = sharper highlight
-    float specular_strength = 0.05;
+    float specular_strength = 0.5;
     float3 specular = specular_strength * spec * params.light_properties.color;
     
     float3 result = (ambient + diffuse) * in.color0.rgb + specular;

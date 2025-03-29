@@ -16,6 +16,7 @@ pub const LightType = enum {
 };
 
 pub const LightProperties = extern struct {
+    direction: Vec3 align(16) = Vec3.with(0, -1, 0),
     color: Vec3 align(16) = Vec3.ones(),
     intensity: f32 align(16) = 1,
 };
