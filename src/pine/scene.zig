@@ -5,7 +5,7 @@ const Mesh = @import("mesh.zig").Mesh;
 const Material = @import("material.zig").Material;
 const UniqueID = @import("resource_manager.zig").UniqueID;
 const UniqueIDType = @import("resource_manager.zig").UniqueIDType;
-const Light = @import("lighting.zig").Light;
+const Light = @import("lighting/light.zig").Light;
 
 pub const SceneVisitor = struct {
     visitFn: *const fn (self: *SceneVisitor, node: *SceneNode) void,

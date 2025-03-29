@@ -8,19 +8,23 @@ const resource_mgr = @import("resource_manager.zig");
 const UniqueIDType = resource_mgr.UniqueIDType;
 const UniqueID = resource_mgr.UniqueID;
 
-pub const Material = struct {
-    allocator: std.mem.Allocator,
-
-    label: []const u8,
-    shader_id: UniqueIDType = UniqueID.INVALID,
-
-    // PBR material properties
+pub const MaterialProperties = struct {
+    // PBR properties
     albedo: Vec3 = Vec3.ones(),
     metallic: f32 = 0.0,
     roughness: f32 = 0.5,
     ambient_occlusion: f32 = 1.0,
     emission: Vec3 = Vec3.zeros(),
     emission_strength: f32 = 0.0,
+};
+
+pub const Material = struct {
+    allocator: std.mem.Allocator,
+
+    label: []const u8,
+    shader_id: UniqueIDType = UniqueID.INVALID,
+
+    properties: MaterialProperties = .{},
 
     pub fn init(
         allocator: std.mem.Allocator,

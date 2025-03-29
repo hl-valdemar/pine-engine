@@ -1,7 +1,7 @@
 const std = @import("std");
 const sokol = @import("sokol");
 
-const Light = @import("lighting.zig").Light;
+const Light = @import("lighting/light.zig").Light;
 
 const math = @import("math.zig");
 const Mat4 = math.Mat4;

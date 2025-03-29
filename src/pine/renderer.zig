@@ -9,9 +9,8 @@ const Mesh = @import("mesh.zig").Mesh;
 const Material = @import("material.zig").Material;
 const Transform = @import("transform.zig").Transform;
 
-const lighting = @import("lighting.zig");
-const LightManager = lighting.LightManager;
-const LightCollector = lighting.LightCollector;
+const LightManager = @import("lighting/light_manager.zig").LightManager;
+const LightCollector = @import("lighting/light_collector.zig").LightCollector;
 
 const shd = @import("shader.zig");
 const Shader = shd.Shader;
