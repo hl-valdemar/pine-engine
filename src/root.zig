@@ -13,7 +13,7 @@ pub const math = @import("pine/math.zig");
 pub const material = @import("pine/material.zig");
 pub const transform = @import("pine/transform.zig");
 pub const perlin = @import("pine/perlin.zig");
-pub const primitives = @import("pine/primitives.zig");
+pub const primitives = @import("pine/primitives/primitives.zig");
 
 //-- private --//
 
