@@ -26,10 +26,10 @@ pub const LightCollector = struct {
             switch (light.light_type) {
                 .Directional => {
                     // transform direction by world rotation
-                    // const world_dir = world_transform.rotation.rotateVec3(light.properties.direction);
+                    const world_dir = world_transform.rotation.rotateVec3(light.properties.direction);
 
-                    const dir_light = light;
-                    // dir_light.properties.direction = world_dir;
+                    var dir_light = light;
+                    dir_light.properties.direction = world_dir;
 
                     self.renderer.light_manager.directional_lights.append(.{
                         .node_id = node.id,

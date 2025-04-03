@@ -75,6 +75,7 @@ const WorldState = struct {
                 self.grid.label,
                 &self.grid.vertices,
                 null,
+                null,
                 &self.grid.indices_filled,
             ) catch |err| {
                 std.log.err("failed to create terrain mesh: {}", .{err});

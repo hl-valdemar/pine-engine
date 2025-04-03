@@ -72,6 +72,7 @@ pub const ResourceManager = struct {
         label: []const u8,
         vertices: []const f32,
         normals: ?[]const f32,
+        colors: ?[]const f32,
         indices: []const u32,
     ) !UniqueIDType {
         const new_id = UniqueID.generateNext();
@@ -80,6 +81,7 @@ pub const ResourceManager = struct {
             label,
             vertices,
             normals,
+            colors,
             indices,
         ));
         return new_id;

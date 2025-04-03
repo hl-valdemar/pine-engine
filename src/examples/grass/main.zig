@@ -84,6 +84,7 @@ const WorldState = struct {
                 self.grid.label,
                 &self.grid.vertices,
                 null,
+                null,
                 &self.grid.indices_filled,
             ) catch |err| {
                 std.log.err("failed to create terrain mesh: {}", .{err});
@@ -110,6 +111,7 @@ const WorldState = struct {
             const grass_mesh_id = self.resource_manager.createMesh(
                 self.grass.label,
                 &Grass.vertices,
+                null,
                 null,
                 &Grass.indices,
             ) catch |err| {

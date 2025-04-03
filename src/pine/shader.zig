@@ -84,7 +84,7 @@ pub const Shader = struct {
             l.attrs[AttributeSlots.NORMALS].buffer_index = 1;
 
             l.attrs[AttributeSlots.COLOR_0].format = .FLOAT4;
-            l.attrs[AttributeSlots.COLOR_0].buffer_index = 0;
+            l.attrs[AttributeSlots.COLOR_0].buffer_index = 2;
             break :blk l;
         };
 

@@ -6,60 +6,9 @@ pub const std_options = std.Options{
     .logFn = pine.logging.log_fn,
 };
 
-const cube_desc = struct {
-    const label = "cube-example";
-
-    const vertices = [_]f32{
-        // positions      colors
-        //
-        // NSColor(red: 0.275, green: 0.259, blue: 0.369, alpha: 1)
-        -1.0, -1.0, -1.0, 0.275,  0.259, 0.369, 1.0,
-        1.0,  -1.0, -1.0, 0.275,  0.259, 0.369, 1.0,
-        1.0,  1.0,  -1.0, 0.275,  0.259, 0.369, 1.0,
-        -1.0, 1.0,  -1.0, 0.275,  0.259, 0.369, 1.0,
-
-        // NSColor(red: 0.0824, green: 0.471, blue: 0.549, alpha: 1)
-        -1.0, -1.0, 1.0,  0.0824, 0.471, 0.549, 1.0,
-        1.0,  -1.0, 1.0,  0.0824, 0.471, 0.549, 1.0,
-        1.0,  1.0,  1.0,  0.0824, 0.471, 0.549, 1.0,
-        -1.0, 1.0,  1.0,  0.0824, 0.471, 0.549, 1.0,
-
-        // NSColor(red: 0, green: 0.725, blue: 0.745, alpha: 1)
-        -1.0, -1.0, -1.0, 0.0,    0.725, 0.745, 1.0,
-        -1.0, 1.0,  -1.0, 0.0,    0.725, 0.745, 1.0,
-        -1.0, 1.0,  1.0,  0.0,    0.725, 0.745, 1.0,
-        -1.0, -1.0, 1.0,  0.0,    0.725, 0.745, 1.0,
-
-        // NSColor(red: 1, green: 0.933, blue: 0.8, alpha: 1)
-        1.0,  -1.0, -1.0, 1.0,    0.933, 0.8,   1.0,
-        1.0,  1.0,  -1.0, 1.0,    0.933, 0.8,   1.0,
-        1.0,  1.0,  1.0,  1.0,    0.933, 0.8,   1.0,
-        1.0,  -1.0, 1.0,  1.0,    0.933, 0.8,   1.0,
-
-        // NSColor(red: 1, green: 0.69, blue: 0.639, alpha: 1)
-        -1.0, -1.0, -1.0, 1.0,    0.69,  0.639, 1.0,
-        -1.0, -1.0, 1.0,  1.0,    0.69,  0.639, 1.0,
-        1.0,  -1.0, 1.0,  1.0,    0.69,  0.639, 1.0,
-        1.0,  -1.0, -1.0, 1.0,    0.69,  0.639, 1.0,
-
-        // NSColor(red: 1, green: 0.412, blue: 0.451, alpha: 1)
-        -1.0, 1.0,  -1.0, 1.0,    0.412, 0.451, 1.0,
-        -1.0, 1.0,  1.0,  1.0,    0.412, 0.451, 1.0,
-        1.0,  1.0,  1.0,  1.0,    0.412, 0.451, 1.0,
-        1.0,  1.0,  -1.0, 1.0,    0.412, 0.451, 1.0,
-    };
-
-    const indices = [_]u32{
-        0,  1,  2,  0,  2,  3,
-        6,  5,  4,  7,  6,  4,
-        8,  9,  10, 8,  10, 11,
-        14, 13, 12, 15, 14, 12,
-        16, 17, 18, 16, 18, 19,
-        22, 21, 20, 23, 22, 20,
-    };
-};
-
 const WorldState = struct {
+    const cube_label: []const u8 = "example-cube";
+
     var cube_node_id: u64 = 0;
 
     allocator: std.mem.Allocator,
@@ -121,17 +70,18 @@ const WorldState = struct {
             });
 
             const cube_mesh_id = self.resource_manager.createMesh(
-                cube_desc.label,
-                &cube_desc.vertices,
+                cube_label,
+                &pine.primitives.Cube.VERTICES,
                 null,
-                &cube_desc.indices,
+                null,
+                &pine.primitives.Cube.INDICES,
             ) catch |err| {
                 std.log.err("failed to create cube mesh: {}", .{err});
                 @panic("FAILED TO CREATE CUBE MESH!\n");
             };
 
             const cube_shader_id = self.resource_manager.createShader(
-                cube_desc.label,
+                cube_label,
                 @embedFile("shaders/cube.vs.metal"),
                 @embedFile("shaders/cube.fs.metal"),
                 sokol.gfx.queryBackend(),
@@ -141,14 +91,14 @@ const WorldState = struct {
             };
 
             const cube_material_id = self.resource_manager.createMaterial(
-                cube_desc.label,
+                cube_label,
                 cube_shader_id,
             ) catch |err| {
                 std.log.err("failed to create cube material: {}", .{err});
                 @panic("FAILED TO CREATE CUBE MATERIAL!\n");
             };
 
-            var cube_node = self.scene.createNode(cube_desc.label) catch {
+            var cube_node = self.scene.createNode(cube_label) catch {
                 @panic("FAILED TO CREATE CUBE NODE!\n");
             };
             cube_node.mesh_id = cube_mesh_id;
