@@ -69,36 +69,25 @@ const WorldState = struct {
                 .logger = .{ .func = sokol.log.func },
             });
 
-            var sun_node = self.scene.createNode("sun-light") catch {
-                @panic("FAILED TO CREATE SUN LIGHT NODE!\n");
-            };
+            var sun_node = self.scene.createNode("sun-light") catch unreachable;
             const sun_light = pine.Light.initDirectional(
                 pine.math.Vec3.with(0, -1, -0.5), // direction
                 pine.math.Vec3.with(1, 1, 1), // white light
                 1, // intensity
             );
             sun_node.light = sun_light;
-            self.scene.root.addChild(sun_node) catch {
-                @panic("FAILED TO ADD SUN LIGHT NODE TO SCENE!\n");
-            };
+            self.scene.root.addChild(sun_node) catch unreachable;
 
             const shader_id = self.resource_manager.createShader(
                 cube_label,
                 @embedFile("shaders/lighting.vs.metal"),
                 @embedFile("shaders/lighting.fs.metal"),
                 sokol.gfx.queryBackend(),
-            ) catch |err| {
-                std.log.err("failed to create shader: {}", .{err});
-                @panic("FAILED TO CREATE SHADER!\n");
-            };
-            const material_id = self.resource_manager.createMaterial(cube_label) catch |err| {
-                std.log.err("failed to create material: {}", .{err});
-                @panic("FAILED TO CREATE MATERIAL!\n");
-            };
+            ) catch unreachable;
+
+            const material_id = self.resource_manager.createMaterial(cube_label) catch unreachable;
             if (self.resource_manager.getMaterial(material_id)) |m| {
-                m.addShaderPass(pine.ShaderPass{ .shader_id = shader_id }) catch {
-                    @panic("FAILED TO ADD SHADER PASS TO CUBE MATERIAL!\n");
-                };
+                m.addShaderPass(pine.ShaderPass{ .shader_id = shader_id }) catch unreachable;
             }
 
             const cube_mesh_id = self.resource_manager.createMesh(
@@ -107,19 +96,12 @@ const WorldState = struct {
                 &pine.primitive.Cube.NORMALS,
                 null,
                 &pine.primitive.Cube.INDICES,
-            ) catch |err| {
-                std.log.err("failed to create cube mesh: {}", .{err});
-                @panic("FAILED TO CREATE CUBE MESH!\n");
-            };
+            ) catch unreachable;
 
-            var cube_node = self.scene.createNode(cube_label) catch {
-                @panic("FAILED TO CREATE PBR CUBE NODE!\n");
-            };
+            var cube_node = self.scene.createNode(cube_label) catch unreachable;
             cube_node.mesh_id = cube_mesh_id;
             cube_node.material_id = material_id;
-            self.scene.root.addChild(cube_node) catch {
-                @panic("FAILED TO ADD PBR CUBE NODE TO SCENE!\n");
-            };
+            self.scene.root.addChild(cube_node) catch unreachable;
             cube_node_id = cube_node.id;
         }
     }
@@ -161,9 +143,7 @@ pub fn main() !void {
         if (status == .leak) std.debug.print("memory leak detected!\n", .{});
     }
 
-    var world = WorldState.init(allocator) catch {
-        @panic("FAILED TO INITIALIZE WORLD STATE!\n");
-    };
+    var world = WorldState.init(allocator) catch unreachable;
     defer world.deinit();
 
     world.run();

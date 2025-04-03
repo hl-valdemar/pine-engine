@@ -86,27 +86,18 @@ const WorldState = struct {
                 null,
                 &self.grid.colors,
                 &self.grid.indices_filled,
-            ) catch |err| {
-                std.log.err("failed to create terrain mesh: {}", .{err});
-                @panic("FAILED TO CREATE TERRAIN MESH!\n");
-            };
+            ) catch unreachable;
+
             const terrain_shader_id = self.resource_manager.createShader(
                 self.grid.label,
                 @embedFile("shaders/terrain.vs.metal"),
                 @embedFile("shaders/terrain.fs.metal"),
                 sokol.gfx.queryBackend(),
-            ) catch |err| {
-                std.log.err("failed to create terrain shader: {}", .{err});
-                @panic("FAILED TO CREATE TERRAIN SHADER!\n");
-            };
-            const terrain_material_id = self.resource_manager.createMaterial(self.grid.label) catch |err| {
-                std.log.err("failed to create terrain material: {}", .{err});
-                @panic("FAILED TO CREATE TERRAIN MATERIAL!\n");
-            };
+            ) catch unreachable;
+
+            const terrain_material_id = self.resource_manager.createMaterial(self.grid.label) catch unreachable;
             if (self.resource_manager.getMaterial(terrain_material_id)) |m| {
-                m.addShaderPass(pine.ShaderPass{ .shader_id = terrain_shader_id }) catch {
-                    @panic("FAILED TO ADD SHADER PASS TO TERRAIN MATERIAL!\n");
-                };
+                m.addShaderPass(pine.ShaderPass{ .shader_id = terrain_shader_id }) catch unreachable;
             }
 
             // grass
@@ -116,49 +107,32 @@ const WorldState = struct {
                 null,
                 &Grass.colors,
                 &Grass.indices,
-            ) catch |err| {
-                std.log.err("failed to create grass mesh: {}", .{err});
-                @panic("FAILED TO CREATE GRASS MESH!\n");
-            };
+            ) catch unreachable;
+
             const grass_shader_id = self.resource_manager.createShader(
                 self.grass.label,
                 @embedFile("shaders/grass.vs.metal"),
                 @embedFile("shaders/grass.fs.metal"),
                 sokol.gfx.queryBackend(),
-            ) catch |err| {
-                std.log.err("failed to create grass shader: {}", .{err});
-                @panic("FAILED TO CREATE GRASS SHADER!\n");
-            };
-            const grass_material_id = self.resource_manager.createMaterial(self.grass.label) catch |err| {
-                std.log.err("failed to create grass material: {}", .{err});
-                @panic("FAILED TO CREATE GRASS MATERIAL!\n");
-            };
+            ) catch unreachable;
+
+            const grass_material_id = self.resource_manager.createMaterial(self.grass.label) catch unreachable;
             if (self.resource_manager.getMaterial(grass_material_id)) |m| {
-                m.addShaderPass(pine.ShaderPass{ .shader_id = grass_shader_id }) catch {
-                    @panic("FAILED TO ADD SHADER PASS TO GRASS MATERIAL!\n");
-                };
+                m.addShaderPass(pine.ShaderPass{ .shader_id = grass_shader_id }) catch unreachable;
             }
 
             // create the terrain node and add it to the root of the scene
-            const terrain_node = self.scene.createNode("terrain") catch {
-                @panic("FAILED TO CREATE TERRAIN NODE!\n");
-            };
+            const terrain_node = self.scene.createNode("terrain") catch unreachable;
             terrain_node.mesh_id = terrain_mesh_id;
             terrain_node.material_id = terrain_material_id;
-            self.scene.root.addChild(terrain_node) catch {
-                @panic("FAILED TO ADD TERRAIN NODE TO SCENE!\n");
-            };
+            self.scene.root.addChild(terrain_node) catch unreachable;
             terrain_node_id = terrain_node.id;
 
             // create the grass node and add it as a child to the terrain node
-            const grass_node = self.scene.createNode("grass") catch {
-                @panic("FAILED TO CREATE GRASS NODE!\n");
-            };
+            const grass_node = self.scene.createNode("grass") catch unreachable;
             grass_node.mesh_id = grass_mesh_id;
             grass_node.material_id = grass_material_id;
-            terrain_node.addChild(grass_node) catch {
-                @panic("FAILED TO ADD GRASS NODE TO SCENE!\n");
-            };
+            terrain_node.addChild(grass_node) catch unreachable;
         }
     }
 
@@ -200,9 +174,7 @@ pub fn main(terrain_type: []const u8) !void {
         if (status == .leak) std.debug.print("memory leak detected!\n", .{});
     }
 
-    var world = WorldState.init(allocator, terrain_type) catch {
-        @panic("FAILED TO INITIALIZE WORLD STATE!\n");
-    };
+    var world = WorldState.init(allocator, terrain_type) catch unreachable;
     defer world.deinit();
 
     world.run();

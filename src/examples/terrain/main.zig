@@ -77,39 +77,24 @@ const WorldState = struct {
                 null,
                 &self.grid.colors,
                 &self.grid.indices_filled,
-            ) catch |err| {
-                std.log.err("failed to create terrain mesh: {}", .{err});
-                @panic("FAILED TO CREATE TERRAIN MESH!\n");
-            };
+            ) catch unreachable;
 
             const shader_id = self.resource_manager.createShader(
                 self.grid.label,
                 @embedFile("shaders/terrain.vs.metal"),
                 @embedFile("shaders/terrain.fs.metal"),
                 sokol.gfx.queryBackend(),
-            ) catch |err| {
-                std.log.err("failed to create terrain shader: {}", .{err});
-                @panic("FAILED TO CREATE TERRAIN SHADER!\n");
-            };
+            ) catch unreachable;
 
-            const material_id = self.resource_manager.createMaterial(self.grid.label) catch |err| {
-                std.log.err("failed to create terrain material: {}", .{err});
-                @panic("FAILED TO CREATE TERRAIN MATERIAL!\n");
-            };
+            const material_id = self.resource_manager.createMaterial(self.grid.label) catch unreachable;
             if (self.resource_manager.getMaterial(material_id)) |m| {
-                m.addShaderPass(pine.ShaderPass{ .shader_id = shader_id }) catch {
-                    @panic("FAILED TO ADD SHADER PASS TO TERRAIN MATERIAL!\n");
-                };
+                m.addShaderPass(pine.ShaderPass{ .shader_id = shader_id }) catch unreachable;
             }
 
-            const terrain_node = self.scene.createNode("terrain") catch {
-                @panic("FAILED TO CREATE TERRAIN NODE!\n");
-            };
+            const terrain_node = self.scene.createNode("terrain") catch unreachable;
             terrain_node.mesh_id = mesh_id;
             terrain_node.material_id = material_id;
-            self.scene.root.addChild(terrain_node) catch {
-                @panic("FAILED TO ADD TERRAIN NODE TO SCENE!\n");
-            };
+            self.scene.root.addChild(terrain_node) catch unreachable;
 
             terrain_node_id = terrain_node.id;
         }
@@ -152,9 +137,7 @@ pub fn main() !void {
         if (status == .leak) std.debug.print("memory leak detected!\n", .{});
     }
 
-    var world = WorldState.init(allocator) catch {
-        @panic("FAILED TO INITIALIZE WORLD STATE!\n");
-    };
+    var world = WorldState.init(allocator) catch unreachable;
     defer world.deinit();
 
     world.run();
