@@ -99,13 +99,15 @@ const WorldState = struct {
                 std.log.err("failed to create terrain shader: {}", .{err});
                 @panic("FAILED TO CREATE TERRAIN SHADER!\n");
             };
-            const terrain_material_id = self.resource_manager.createMaterial(
-                self.grid.label,
-                terrain_shader_id,
-            ) catch |err| {
+            const terrain_material_id = self.resource_manager.createMaterial(self.grid.label) catch |err| {
                 std.log.err("failed to create terrain material: {}", .{err});
                 @panic("FAILED TO CREATE TERRAIN MATERIAL!\n");
             };
+            if (self.resource_manager.getMaterial(terrain_material_id)) |m| {
+                m.addShaderPass(pine.ShaderPass{ .shader_id = terrain_shader_id }) catch {
+                    @panic("FAILED TO ADD SHADER PASS TO TERRAIN MATERIAL!\n");
+                };
+            }
 
             // grass
             const grass_mesh_id = self.resource_manager.createMesh(
@@ -127,13 +129,15 @@ const WorldState = struct {
                 std.log.err("failed to create grass shader: {}", .{err});
                 @panic("FAILED TO CREATE GRASS SHADER!\n");
             };
-            const grass_material_id = self.resource_manager.createMaterial(
-                self.grass.label,
-                grass_shader_id,
-            ) catch |err| {
+            const grass_material_id = self.resource_manager.createMaterial(self.grass.label) catch |err| {
                 std.log.err("failed to create grass material: {}", .{err});
                 @panic("FAILED TO CREATE GRASS MATERIAL!\n");
             };
+            if (self.resource_manager.getMaterial(grass_material_id)) |m| {
+                m.addShaderPass(pine.ShaderPass{ .shader_id = grass_shader_id }) catch {
+                    @panic("FAILED TO ADD SHADER PASS TO GRASS MATERIAL!\n");
+                };
+            }
 
             // create the terrain node and add it to the root of the scene
             const terrain_node = self.scene.createNode("terrain") catch {

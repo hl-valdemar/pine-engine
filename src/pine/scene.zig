@@ -127,7 +127,7 @@ pub const SceneNode = struct {
 
         return .{
             .allocator = allocator,
-            .id = UniqueID.generateNext(),
+            .id = UniqueID.generate(),
             .label = label_copy,
             .parent = null,
             .children = std.ArrayList(*SceneNode).init(allocator),

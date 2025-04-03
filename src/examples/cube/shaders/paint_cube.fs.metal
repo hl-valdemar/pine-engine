@@ -17,9 +17,8 @@ struct MainIn {
 
 fragment MainOut fs_main(MainIn in [[stage_in]], constant FsParams& params [[buffer(1)]]) {
     MainOut out;
-    
-    //out.color0 = in.color0;
-    out.color0 = float4(1, 0, 0, 1);
+
+    out.color0 = float4(0, 0, 1, 0.5);
 
     return out;
 }

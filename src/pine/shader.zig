@@ -3,6 +3,10 @@ const sokol = @import("sokol");
 
 const LightProperties = @import("lighting/light.zig").LightProperties;
 
+const resource_manager = @import("resource_manager.zig");
+const UniqueID = resource_manager.UniqueID;
+const UniqueIDType = resource_manager.UniqueIDType;
+
 const math = @import("math.zig");
 const Mat4 = math.Mat4;
 const Vec4 = math.Vec4;
@@ -27,9 +31,12 @@ pub const FsParams = extern struct {
 
 pub const Shader = struct {
     allocator: std.mem.Allocator,
+
     label: []const u8,
+
     vs_source: []const u8,
     fs_source: []const u8,
+
     shader: sokol.gfx.Shader,
     pipeline: sokol.gfx.Pipeline,
 
@@ -49,8 +56,9 @@ pub const Shader = struct {
         const label_copy = try allocator.dupeZ(u8, label);
         errdefer allocator.free(label_copy);
 
-        var shader_desc = sokol.gfx.ShaderDesc{};
-        shader_desc.label = label_copy;
+        var shader_desc = sokol.gfx.ShaderDesc{
+            .label = label_copy,
+        };
         switch (backend) {
             .METAL_MACOS => {
                 shader_desc.vertex_func.source = vs_source_copy;
@@ -71,7 +79,6 @@ pub const Shader = struct {
             },
             else => @panic("PLATFORM NOT SUPPORTED!\n"),
         }
-
         const shader = sokol.gfx.makeShader(shader_desc);
         errdefer sokol.gfx.destroyShader(shader);
 
@@ -88,18 +95,28 @@ pub const Shader = struct {
             break :blk l;
         };
 
-        const pipeline = sokol.gfx.makePipeline(.{
-            .label = label_copy,
-            .shader = shader,
-            .layout = layout,
-            .index_type = .UINT32,
-            .cull_mode = .NONE,
-            .face_winding = .CW,
-            .depth = .{
-                .write_enabled = true,
-                .compare = .LESS_EQUAL,
-            },
-        });
+        const pipe_desc = blk: {
+            var p = sokol.gfx.PipelineDesc{
+                .label = label_copy,
+                .shader = shader,
+                .layout = layout,
+                .index_type = .UINT32,
+                .cull_mode = .NONE,
+                .face_winding = .CW,
+                .depth = .{
+                    .write_enabled = true,
+                    .compare = .LESS_EQUAL,
+                },
+            };
+
+            // enable transparency between shader passes
+            p.colors[0].blend.enabled = true;
+            p.colors[0].blend.src_factor_rgb = .SRC_ALPHA;
+            p.colors[0].blend.dst_factor_rgb = .ONE_MINUS_SRC_ALPHA;
+
+            break :blk p;
+        };
+        const pipeline = sokol.gfx.makePipeline(pipe_desc);
         errdefer sokol.gfx.destroyPipeline(pipeline);
 
         return .{
@@ -115,8 +132,13 @@ pub const Shader = struct {
     pub fn deinit(self: *const Shader) void {
         sokol.gfx.destroyShader(self.shader);
         sokol.gfx.destroyPipeline(self.pipeline);
+
         self.allocator.free(self.vs_source);
         self.allocator.free(self.fs_source);
         self.allocator.free(self.label);
     }
+};
+
+pub const ShaderPass = struct {
+    shader_id: UniqueIDType = UniqueID.INVALID,
 };

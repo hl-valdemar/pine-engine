@@ -69,12 +69,14 @@ const WorldState = struct {
                 .logger = .{ .func = sokol.log.func },
             });
 
+            self.renderer.initAfterSokol();
+
             const cube_mesh_id = self.resource_manager.createMesh(
                 cube_label,
-                &pine.primitives.Cube.VERTICES,
+                &pine.primitive.Cube.VERTICES,
                 null,
                 null,
-                &pine.primitives.Cube.INDICES,
+                &pine.primitive.Cube.INDICES,
             ) catch |err| {
                 std.log.err("failed to create cube mesh: {}", .{err});
                 @panic("FAILED TO CREATE CUBE MESH!\n");
@@ -89,14 +91,29 @@ const WorldState = struct {
                 std.log.err("failed to create cube shader: {}", .{err});
                 @panic("FAILED TO CREATE CUBE SHADER!\n");
             };
-
-            const cube_material_id = self.resource_manager.createMaterial(
+            const paint_cube_shader_id = self.resource_manager.createShader(
                 cube_label,
-                cube_shader_id,
+                @embedFile("shaders/cube.vs.metal"),
+                @embedFile("shaders/paint_cube.fs.metal"),
+                sokol.gfx.queryBackend(),
             ) catch |err| {
+                std.log.err("failed to create paint cube shader: {}", .{err});
+                @panic("FAILED TO CREATE CUBE PAINT SHADER!\n");
+            };
+
+            const cube_material_id = self.resource_manager.createMaterial(cube_label) catch |err| {
                 std.log.err("failed to create cube material: {}", .{err});
                 @panic("FAILED TO CREATE CUBE MATERIAL!\n");
             };
+
+            if (self.resource_manager.getMaterial(cube_material_id)) |m| {
+                m.addShaderPass(pine.ShaderPass{ .shader_id = cube_shader_id }) catch {
+                    @panic("FAILED TO ADD SHADER PASS TO CUBE MATERIAL!\n");
+                };
+                m.addShaderPass(pine.ShaderPass{ .shader_id = paint_cube_shader_id }) catch {
+                    @panic("FAILED TO ADD SHADER PASS TO CUBE MATERIAL (PAINT SHADER)!\n");
+                };
+            }
 
             var cube_node = self.scene.createNode(cube_label) catch {
                 @panic("FAILED TO CREATE CUBE NODE!\n");

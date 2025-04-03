@@ -91,21 +91,22 @@ const WorldState = struct {
                 std.log.err("failed to create shader: {}", .{err});
                 @panic("FAILED TO CREATE SHADER!\n");
             };
-
-            const material_id = self.resource_manager.createMaterial(
-                cube_label,
-                shader_id,
-            ) catch |err| {
+            const material_id = self.resource_manager.createMaterial(cube_label) catch |err| {
                 std.log.err("failed to create material: {}", .{err});
                 @panic("FAILED TO CREATE MATERIAL!\n");
             };
+            if (self.resource_manager.getMaterial(material_id)) |m| {
+                m.addShaderPass(pine.ShaderPass{ .shader_id = shader_id }) catch {
+                    @panic("FAILED TO ADD SHADER PASS TO CUBE MATERIAL!\n");
+                };
+            }
 
             const cube_mesh_id = self.resource_manager.createMesh(
                 cube_label,
-                &pine.primitives.Cube.VERTICES,
-                &pine.primitives.Cube.NORMALS,
+                &pine.primitive.Cube.VERTICES,
+                &pine.primitive.Cube.NORMALS,
                 null,
-                &pine.primitives.Cube.INDICES,
+                &pine.primitive.Cube.INDICES,
             ) catch |err| {
                 std.log.err("failed to create cube mesh: {}", .{err});
                 @panic("FAILED TO CREATE CUBE MESH!\n");

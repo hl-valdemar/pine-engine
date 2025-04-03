@@ -37,12 +37,16 @@ pub const UniformSlots = struct {
 
 pub const Renderer = struct {
     allocator: std.mem.Allocator,
+
     camera: Camera,
     render_queue: std.ArrayList(RenderCommand),
     light_manager: LightManager,
 
+    current_frame_buffer: ?sokol.gfx.Image = null,
+    ping_pong_buffers: [2]sokol.gfx.Image = undefined,
+
     pub fn init(allocator: std.mem.Allocator, camera: Camera) Renderer {
-        return .{
+        return Renderer{
             .allocator = allocator,
             .camera = camera,
             .render_queue = std.ArrayList(RenderCommand).init(allocator),
@@ -50,9 +54,32 @@ pub const Renderer = struct {
         };
     }
 
-    pub fn deinit(self: *const Renderer) void {
+    // all sokol related initializations
+    pub fn initAfterSokol(self: *Renderer) void {
+        self.setupRenderTargets();
+    }
+
+    pub fn deinit(self: *Renderer) void {
         self.render_queue.deinit();
         self.light_manager.deinit();
+
+        self.current_frame_buffer = null;
+
+        for (self.ping_pong_buffers) |img| {
+            sokol.gfx.destroyImage(img);
+        }
+    }
+
+    fn setupRenderTargets(self: *Renderer) void {
+        const img_desc = sokol.gfx.ImageDesc{
+            .width = sokol.app.width(),
+            .height = sokol.app.height(),
+            .usage = .DYNAMIC,
+            .pixel_format = .RGBA8,
+        };
+
+        self.ping_pong_buffers[0] = sokol.gfx.makeImage(img_desc);
+        self.ping_pong_buffers[1] = sokol.gfx.makeImage(img_desc);
     }
 
     pub fn renderScene(
@@ -80,7 +107,7 @@ pub const Renderer = struct {
 
         // clear screen
         const pass = blk: {
-            var p = sokol.gfx.Pass{ .swapchain = sokol.glue.swapchain() };
+            var p = sokol.gfx.Pass{};
             p.action.colors[0] = .{
                 .load_action = .CLEAR,
                 .clear_value = .{
@@ -90,6 +117,7 @@ pub const Renderer = struct {
                     .a = 1,
                 },
             };
+            p.swapchain = sokol.glue.swapchain(); // render to screen
             break :blk p;
         };
         sokol.gfx.beginPass(pass);
@@ -111,41 +139,43 @@ pub const Renderer = struct {
         cmd: RenderCommand,
         resource_manager: *ResourceManager,
     ) void {
-        const shader = if (resource_manager.getShader(cmd.material.shader_id)) |s| blk: {
-            break :blk s;
-        } else {
-            plog.err("shader ID '{d}' not found", .{cmd.material.shader_id});
-            return;
-        };
+        for (cmd.material.shader_passes.items) |shader_pass| {
+            const shader = if (resource_manager.getShader(shader_pass.shader_id)) |s| blk: {
+                break :blk s;
+            } else {
+                plog.err("shader ID '{d}' not found", .{shader_pass.shader_id});
+                return;
+            };
 
-        sokol.gfx.applyPipeline(shader.pipeline);
-        sokol.gfx.applyBindings(cmd.mesh.bindings);
+            sokol.gfx.applyPipeline(shader.pipeline);
+            sokol.gfx.applyBindings(cmd.mesh.bindings);
 
-        const vs_params = VsParams{
-            .model = cmd.transform.getModelMatrix(),
-            .view = self.camera.view,
-            .projection = self.camera.projection,
-        };
+            const vs_params = VsParams{
+                .model = cmd.transform.getModelMatrix(),
+                .view = self.camera.view,
+                .projection = self.camera.projection,
+            };
 
-        const light_entry = self.light_manager.directional_lights.getLastOrNull();
-        const light_properties = if (light_entry) |entry| blk: {
-            break :blk entry.light.properties;
-        } else blk: {
-            break :blk null;
-        };
+            const light_entry = self.light_manager.directional_lights.getLastOrNull();
+            const light_properties = if (light_entry) |entry| blk: {
+                break :blk entry.light.properties;
+            } else blk: {
+                break :blk null;
+            };
 
-        const fs_params = FsParams{
-            .light_properties = light_properties orelse LightProperties{},
-            .camera_pos = self.camera.position,
-        };
+            const fs_params = FsParams{
+                .light_properties = light_properties orelse LightProperties{},
+                .camera_pos = self.camera.position,
+            };
 
-        sokol.gfx.applyUniforms(UniformSlots.VS_PARAMS, sokol.gfx.asRange(&vs_params));
-        sokol.gfx.applyUniforms(UniformSlots.FS_PARAMS, sokol.gfx.asRange(&fs_params));
+            sokol.gfx.applyUniforms(UniformSlots.VS_PARAMS, sokol.gfx.asRange(&vs_params));
+            sokol.gfx.applyUniforms(UniformSlots.FS_PARAMS, sokol.gfx.asRange(&fs_params));
 
-        const first_element = 0;
-        const element_count: u32 = @intCast(cmd.mesh.indices.len);
+            const first_element = 0;
+            const element_count: u32 = @intCast(cmd.mesh.indices.len);
 
-        sokol.gfx.draw(first_element, element_count, cmd.instance_count);
+            sokol.gfx.draw(first_element, element_count, cmd.instance_count);
+        }
     }
 };
 

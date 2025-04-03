@@ -22,8 +22,7 @@ struct MainIn {
     float4 color0 [[attribute(2)]];
 };
 
-vertex MainOut vs_main(MainIn in [[stage_in]], constant VsParams& params [[buffer(0)]])
-{
+vertex MainOut vs_main(MainIn in [[stage_in]], constant VsParams& params [[buffer(0)]]) {
     MainOut out;
 
     float4x4 mvp = params.projection * params.view * params.model;

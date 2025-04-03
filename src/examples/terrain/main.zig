@@ -92,13 +92,15 @@ const WorldState = struct {
                 @panic("FAILED TO CREATE TERRAIN SHADER!\n");
             };
 
-            const material_id = self.resource_manager.createMaterial(
-                self.grid.label,
-                shader_id,
-            ) catch |err| {
+            const material_id = self.resource_manager.createMaterial(self.grid.label) catch |err| {
                 std.log.err("failed to create terrain material: {}", .{err});
                 @panic("FAILED TO CREATE TERRAIN MATERIAL!\n");
             };
+            if (self.resource_manager.getMaterial(material_id)) |m| {
+                m.addShaderPass(pine.ShaderPass{ .shader_id = shader_id }) catch {
+                    @panic("FAILED TO ADD SHADER PASS TO TERRAIN MATERIAL!\n");
+                };
+            }
 
             const terrain_node = self.scene.createNode("terrain") catch {
                 @panic("FAILED TO CREATE TERRAIN NODE!\n");

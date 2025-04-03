@@ -19,9 +19,9 @@ pub const UniqueIDType = u64;
 pub const UniqueID = struct {
     pub const INVALID: UniqueIDType = 0;
 
-    var next_id: UniqueIDType = INVALID + 1;
+    var next_id: UniqueIDType = INVALID + 1; // first valid ID
 
-    pub fn generateNext() UniqueIDType {
+    pub fn generate() UniqueIDType {
         defer next_id += 1;
         return next_id;
     }
@@ -75,7 +75,7 @@ pub const ResourceManager = struct {
         colors: ?[]const f32,
         indices: []const u32,
     ) !UniqueIDType {
-        const new_id = UniqueID.generateNext();
+        const new_id = UniqueID.generate();
         try self.meshes.put(new_id, try Mesh.init(
             self.allocator,
             label,
@@ -114,7 +114,7 @@ pub const ResourceManager = struct {
         fragment_source: []const u8,
         backend: sokol.gfx.Backend,
     ) !UniqueIDType {
-        const new_id = UniqueID.generateNext();
+        const new_id = UniqueID.generate();
         try self.shaders.put(new_id, try Shader.init(
             self.allocator,
             label,
@@ -148,13 +148,11 @@ pub const ResourceManager = struct {
     pub fn createMaterial(
         self: *ResourceManager,
         label: []const u8,
-        shader_id: UniqueIDType,
     ) !UniqueIDType {
-        const new_id = UniqueID.generateNext();
+        const new_id = UniqueID.generate();
         try self.materials.put(new_id, try Material.init(
             self.allocator,
             label,
-            shader_id,
         ));
         return new_id;
     }
