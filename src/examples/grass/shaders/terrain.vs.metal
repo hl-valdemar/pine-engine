@@ -9,7 +9,8 @@ struct VsParams {
 
 struct VertexIn {
     float3 position [[attribute(0)]];
-    float4 color0 [[attribute(1)]];
+    //float3 normal [[attribute(1)]];
+    float4 color0 [[attribute(2)]];
 };
 
 struct VertexOut {
@@ -19,8 +20,10 @@ struct VertexOut {
 
 vertex VertexOut vs_main(VertexIn in [[stage_in]], constant VsParams& params [[buffer(0)]]) {
     VertexOut out;
+
     float4x4 mvp = params.projection * params.view * params.model;
     out.position = mvp * float4(in.position, 1.0);
     out.color0 = in.color0;
+    
     return out;
 }

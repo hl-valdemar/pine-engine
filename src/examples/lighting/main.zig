@@ -82,22 +82,22 @@ const WorldState = struct {
                 @panic("FAILED TO ADD SUN LIGHT NODE TO SCENE!\n");
             };
 
-            const pbr_shader_id = self.resource_manager.createShader(
-                "pbr-shader",
+            const shader_id = self.resource_manager.createShader(
+                cube_label,
                 @embedFile("shaders/lighting.vs.metal"),
                 @embedFile("shaders/lighting.fs.metal"),
                 sokol.gfx.queryBackend(),
             ) catch |err| {
-                std.log.err("failed to create PBR shader: {}", .{err});
-                @panic("FAILED TO CREATE PBR SHADER!\n");
+                std.log.err("failed to create shader: {}", .{err});
+                @panic("FAILED TO CREATE SHADER!\n");
             };
 
-            const pbr_material_id = self.resource_manager.createMaterial(
-                "pbr-material",
-                pbr_shader_id,
+            const material_id = self.resource_manager.createMaterial(
+                cube_label,
+                shader_id,
             ) catch |err| {
-                std.log.err("failed to create PBR material: {}", .{err});
-                @panic("FAILED TO CREATE PBR MATERIAL!\n");
+                std.log.err("failed to create material: {}", .{err});
+                @panic("FAILED TO CREATE MATERIAL!\n");
             };
 
             const cube_mesh_id = self.resource_manager.createMesh(
@@ -111,11 +111,11 @@ const WorldState = struct {
                 @panic("FAILED TO CREATE CUBE MESH!\n");
             };
 
-            var cube_node = self.scene.createNode("pbr-cube") catch {
+            var cube_node = self.scene.createNode(cube_label) catch {
                 @panic("FAILED TO CREATE PBR CUBE NODE!\n");
             };
             cube_node.mesh_id = cube_mesh_id;
-            cube_node.material_id = pbr_material_id;
+            cube_node.material_id = material_id;
             self.scene.root.addChild(cube_node) catch {
                 @panic("FAILED TO ADD PBR CUBE NODE TO SCENE!\n");
             };

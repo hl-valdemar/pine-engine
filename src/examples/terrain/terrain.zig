@@ -20,7 +20,8 @@ pub const Grid = struct {
     const indices_count_wireframe = (h_lines_count + v_lines_count) * 2;
 
     label: []const u8,
-    vertices: [vertex_count * 7]f32 = undefined, // x,y,z + r,g,b,a
+    vertices: [vertex_count * 3]f32 = undefined, // x,y,z
+    colors: [vertex_count * 4]f32 = undefined, // r,g,b,a
     indices_filled: [indices_count_filled]u32 = undefined,
     indices_wireframe: [indices_count_wireframe]u32 = undefined,
 
@@ -42,7 +43,8 @@ pub const Grid = struct {
         const cell_size = size / @as(f32, @floatFromInt(cells_per_side));
         const half_size = size / 2.0;
 
-        var idx: u32 = 0;
+        var vertex_idx: u32 = 0;
+        var color_idx: u32 = 0;
         var z: u32 = 0;
         while (z < vertices_per_side) : (z += 1) {
             var x: u32 = 0;
@@ -56,18 +58,19 @@ pub const Grid = struct {
                     (0.3 * @cos(pos_x * 0.2) * @sin(pos_z * 0.2)) * height_scale;
                 // const height = 0;
 
-                self.vertices[idx + 0] = pos_x;
-                self.vertices[idx + 1] = height;
-                self.vertices[idx + 2] = pos_z;
+                self.vertices[vertex_idx + 0] = pos_x;
+                self.vertices[vertex_idx + 1] = height;
+                self.vertices[vertex_idx + 2] = pos_z;
 
                 // color based on height (green to white gradient)
                 const normalized_height = height / height_scale;
-                self.vertices[idx + 3] = 0.2 + normalized_height * 0.8; // r (more red at higher elevations)
-                self.vertices[idx + 4] = 0.7; // g (always some green)
-                self.vertices[idx + 5] = 0.2 + normalized_height * 0.8; // b (more blue at higher elevations)
-                self.vertices[idx + 6] = 1.0; // a (always fully opaque)
+                self.colors[color_idx + 0] = 0.2 + normalized_height * 0.8; // r (more red at higher elevations)
+                self.colors[color_idx + 1] = 0.7; // g (always some green)
+                self.colors[color_idx + 2] = 0.2 + normalized_height * 0.8; // b (more blue at higher elevations)
+                self.colors[color_idx + 3] = 1.0; // a (always fully opaque)
 
-                idx += 7;
+                vertex_idx += 3;
+                color_idx += 4;
             }
         }
     }

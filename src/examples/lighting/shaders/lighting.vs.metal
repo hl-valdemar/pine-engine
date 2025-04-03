@@ -3,8 +3,7 @@
 
 using namespace metal;
 
-struct VsParams
-{
+struct VsParams {
     float4x4 model;
     float4x4 view;
     float4x4 projection;
@@ -24,7 +23,7 @@ struct MainIn {
 };
 
 vertex MainOut vs_main(MainIn in [[stage_in]], constant VsParams& params [[buffer(0)]]) {
-    MainOut out = {};
+    MainOut out;
 
     float4x4 mvp = params.projection * params.view * params.model;
 

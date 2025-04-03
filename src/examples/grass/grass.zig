@@ -21,7 +21,8 @@ pub const Grass = struct {
 
     var blades_total: u32 = 0;
 
-    pub var vertices: [vertex_count * 7]f32 = undefined;
+    pub var vertices: [vertex_count * 3]f32 = undefined;
+    pub var colors: [vertex_count * 4]f32 = undefined;
     pub var indices: [index_count]u32 = undefined;
 
     label: []const u8,
@@ -48,6 +49,7 @@ pub const Grass = struct {
         const half_size = Grid.size / 2.0;
 
         var vertex_idx: u32 = 0;
+        var color_idx: u32 = 0;
         var index_idx: u32 = 0;
         var total_blades: u32 = 0;
 
@@ -115,7 +117,7 @@ pub const Grass = struct {
                     if (density_fine < 0.3) continue;
 
                     // base vertex index for this blade - record the index of the first vertex in this blade
-                    const base_vertex_idx = vertex_idx / 7;
+                    const base_vertex_idx = vertex_idx / 3;
 
                     // compute the exact height at this position using bilinear interpolation
                     const x_pct = offset_x / cell_size;
@@ -160,74 +162,86 @@ pub const Grass = struct {
                     vertices[vertex_idx + 0] = pos_x + offset_x1; // x
                     vertices[vertex_idx + 1] = height; // y
                     vertices[vertex_idx + 2] = pos_z + offset_z1; // z
+                    vertex_idx += 3;
+
                     // color - darker green at base
-                    vertices[vertex_idx + 3] = palettes.paper8.BLUE_GREEN.r; // r
-                    vertices[vertex_idx + 4] = palettes.paper8.BLUE_GREEN.g; // g
-                    vertices[vertex_idx + 5] = palettes.paper8.BLUE_GREEN.b; // b
-                    vertices[vertex_idx + 6] = 1.0; // a
-                    vertex_idx += 7;
+                    colors[color_idx + 0] = palettes.paper8.BLUE_GREEN.r; // r
+                    colors[color_idx + 1] = palettes.paper8.BLUE_GREEN.g; // g
+                    colors[color_idx + 2] = palettes.paper8.BLUE_GREEN.b; // b
+                    colors[color_idx + 3] = 1.0; // a
+                    color_idx += 4;
 
                     // vertex 1: bottom right
                     vertices[vertex_idx + 0] = pos_x + offset_x2; // x
                     vertices[vertex_idx + 1] = height; // y
                     vertices[vertex_idx + 2] = pos_z + offset_z2; // z
+                    vertex_idx += 3;
+
                     // color - darker green at base
-                    vertices[vertex_idx + 3] = palettes.paper8.BLUE_GREEN.r; // r
-                    vertices[vertex_idx + 4] = palettes.paper8.BLUE_GREEN.g; // g
-                    vertices[vertex_idx + 5] = palettes.paper8.BLUE_GREEN.b; // b
-                    vertices[vertex_idx + 6] = 1.0; // a
-                    vertex_idx += 7;
+                    colors[color_idx + 0] = palettes.paper8.BLUE_GREEN.r; // r
+                    colors[color_idx + 1] = palettes.paper8.BLUE_GREEN.g; // g
+                    colors[color_idx + 2] = palettes.paper8.BLUE_GREEN.b; // b
+                    colors[color_idx + 3] = 1.0; // a
+                    color_idx += 4;
 
                     // vertex 2: middle left (at bend point)
                     vertices[vertex_idx + 0] = pos_x + offset_x1; // x
                     vertices[vertex_idx + 1] = bend_height; // y
                     vertices[vertex_idx + 2] = pos_z + offset_z1; // z
+                    vertex_idx += 3;
+
                     // color - medium green at middle
                     const mid_green_r = (palettes.paper8.BLUE_GREEN.r + 1.0) * 0.5;
                     const mid_green_g = (palettes.paper8.BLUE_GREEN.g + 1.0) * 0.5;
                     const mid_green_b = (palettes.paper8.BLUE_GREEN.b + 1.0) * 0.5;
-                    vertices[vertex_idx + 3] = mid_green_r; // r
-                    vertices[vertex_idx + 4] = mid_green_g; // g
-                    vertices[vertex_idx + 5] = mid_green_b; // b
-                    vertices[vertex_idx + 6] = 1.0; // a
-                    vertex_idx += 7;
+                    colors[color_idx + 0] = mid_green_r; // r
+                    colors[color_idx + 1] = mid_green_g; // g
+                    colors[color_idx + 2] = mid_green_b; // b
+                    colors[color_idx + 3] = 1.0; // a
+                    color_idx += 4;
 
                     // vertex 3: middle right (at bend point)
                     vertices[vertex_idx + 0] = pos_x + offset_x2; // x
                     vertices[vertex_idx + 1] = bend_height; // y
                     vertices[vertex_idx + 2] = pos_z + offset_z2; // z
+                    vertex_idx += 3;
+
                     // color - medium green at middle
-                    vertices[vertex_idx + 3] = mid_green_r; // r
-                    vertices[vertex_idx + 4] = mid_green_g; // g
-                    vertices[vertex_idx + 5] = mid_green_b; // b
-                    vertices[vertex_idx + 6] = 1.0; // a
-                    vertex_idx += 7;
+                    colors[color_idx + 0] = mid_green_r; // r
+                    colors[color_idx + 1] = mid_green_g; // g
+                    colors[color_idx + 2] = mid_green_b; // b
+                    colors[color_idx + 3] = 1.0; // a
+                    color_idx += 4;
 
                     // vertex 4: top left (tip after bend)
                     vertices[vertex_idx + 0] = pos_x + offset_x1 + bend_offset_x; // x
                     vertices[vertex_idx + 1] = bend_height + upper_section_height; // y
                     vertices[vertex_idx + 2] = pos_z + offset_z1 + bend_offset_z; // z
+                    vertex_idx += 3;
+
                     // color - lighter green at tip
                     const blade_height_normalized = blade_height / max_height;
                     const tip_green_r = (1 - blade_height_normalized) * mid_green_r + blade_height_normalized * palettes.paper8.YELLOW_LIGHT.r;
                     const tip_green_g = (1 - blade_height_normalized) * mid_green_g + blade_height_normalized * palettes.paper8.YELLOW_LIGHT.g;
                     const tip_green_b = (1 - blade_height_normalized) * mid_green_b + blade_height_normalized * palettes.paper8.YELLOW_LIGHT.b;
-                    vertices[vertex_idx + 3] = tip_green_r; // r
-                    vertices[vertex_idx + 4] = tip_green_g; // g
-                    vertices[vertex_idx + 5] = tip_green_b; // b
-                    vertices[vertex_idx + 6] = 1.0; // a
-                    vertex_idx += 7;
+                    colors[color_idx + 0] = tip_green_r; // r
+                    colors[color_idx + 1] = tip_green_g; // g
+                    colors[color_idx + 2] = tip_green_b; // b
+                    colors[color_idx + 3] = 1.0; // a
+                    color_idx += 4;
 
                     // vertex 5: top right (tip after bend)
                     vertices[vertex_idx + 0] = pos_x + offset_x2 + bend_offset_x; // x
                     vertices[vertex_idx + 1] = bend_height + upper_section_height; // y
                     vertices[vertex_idx + 2] = pos_z + offset_z2 + bend_offset_z; // z
+                    vertex_idx += 3;
+
                     // color - lighter green at tip
-                    vertices[vertex_idx + 3] = tip_green_r; // r
-                    vertices[vertex_idx + 4] = tip_green_g; // g
-                    vertices[vertex_idx + 5] = tip_green_b; // b
-                    vertices[vertex_idx + 6] = 1.0; // a
-                    vertex_idx += 7;
+                    colors[color_idx + 0] = tip_green_r; // r
+                    colors[color_idx + 1] = tip_green_g; // g
+                    colors[color_idx + 2] = tip_green_b; // b
+                    colors[color_idx + 3] = 1.0; // a
+                    color_idx += 4;
 
                     // create indices for two triangles in the lower part (forming a quad)
                     indices[index_idx + 0] = @intCast(base_vertex_idx); // bottom left
@@ -259,7 +273,7 @@ pub const Grass = struct {
 
         std.log.info(
             "Generated {} grass blades with {} vertices and {} indices",
-            .{ total_blades, vertex_idx / 7, index_idx },
+            .{ total_blades, vertex_idx / 3, index_idx },
         );
     }
 };
