@@ -71,6 +71,12 @@ const WorldState = struct {
 
             self.renderer.initAfterSokol();
 
+            // add light to scene (simulate a sun - from below?)
+            var sun_node = self.scene.createNode("sun") catch unreachable;
+            sun_node.light = pine.Light.initDirectional(pine.math.Vec3.with(0, 1, 0), pine.math.Vec3.ones(), 1);
+            self.scene.root.addChild(sun_node) catch unreachable;
+
+            // add cube node to scene
             const cube_mesh_id = self.resource_manager.createMesh(
                 cube_label,
                 &pine.primitive.Cube.VERTICES,
