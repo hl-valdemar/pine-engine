@@ -26,7 +26,11 @@ fragment MainOut fs_main(
 
     float2 tex_coord = in.position.xy / float2(previous_pass_texture.get_width(), previous_pass_texture.get_height());
     float4 previous_color = previous_pass_texture.sample(texture_sampler, tex_coord);
-    float4 new_color = float4(0, 0, 1, 0.5);
+
+    float4 new_color = float4(0, 0, 0, 0);
+    if (tex_coord.x < 1 - tex_coord.y) {
+        new_color = float4(0, 0, 1, 0.5);
+    }
 
     out.color0 = new_color + previous_color * (1 - new_color.a);
 
