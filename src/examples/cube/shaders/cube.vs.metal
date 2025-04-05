@@ -20,6 +20,7 @@ struct MainIn {
     float3 position [[attribute(0)]];
     float3 normal [[attribute(1)]];
     float4 color0 [[attribute(2)]];
+    float3 texcoord0 [[attribute(3)]];
 };
 
 vertex MainOut vs_main(MainIn in [[stage_in]], constant VsParams& params [[buffer(0)]]) {

@@ -12,12 +12,6 @@ const Mat4 = math.Mat4;
 const Vec4 = math.Vec4;
 const Vec3 = math.Vec3;
 
-pub const AttributeSlots = struct {
-    pub const POSITION = 0;
-    pub const NORMALS = 1;
-    pub const COLOR_0 = 2;
-};
-
 pub const VsParams = extern struct {
     model: Mat4 align(16),
     view: Mat4 align(16),
@@ -38,7 +32,6 @@ pub const Shader = struct {
     fs_source: []const u8,
 
     shader: sokol.gfx.Shader,
-    pipeline: sokol.gfx.Pipeline,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -76,63 +69,32 @@ pub const Shader = struct {
                 shader_desc.uniform_blocks[1].layout = .STD140;
                 shader_desc.uniform_blocks[1].msl_buffer_n = 1;
                 shader_desc.uniform_blocks[1].size = @sizeOf(FsParams);
+
+                shader_desc.images[0].stage = .FRAGMENT;
+                shader_desc.images[0].image_type = ._2D;
+                shader_desc.samplers[0].stage = .FRAGMENT;
+                shader_desc.samplers[0].sampler_type = .FILTERING;
+
+                shader_desc.image_sampler_pairs[0].stage = .FRAGMENT;
+                shader_desc.image_sampler_pairs[0].image_slot = 0;
+                shader_desc.image_sampler_pairs[0].sampler_slot = 0;
             },
             else => @panic("PLATFORM NOT SUPPORTED!\n"),
         }
         const shader = sokol.gfx.makeShader(shader_desc);
         errdefer sokol.gfx.destroyShader(shader);
 
-        const layout: sokol.gfx.VertexLayoutState = blk: {
-            var l = sokol.gfx.VertexLayoutState{};
-            l.attrs[AttributeSlots.POSITION].format = .FLOAT3;
-            l.attrs[AttributeSlots.POSITION].buffer_index = 0;
-
-            l.attrs[AttributeSlots.NORMALS].format = .FLOAT3;
-            l.attrs[AttributeSlots.NORMALS].buffer_index = 1;
-
-            l.attrs[AttributeSlots.COLOR_0].format = .FLOAT4;
-            l.attrs[AttributeSlots.COLOR_0].buffer_index = 2;
-            break :blk l;
-        };
-
-        const pipe_desc = blk: {
-            var p = sokol.gfx.PipelineDesc{
-                .label = label_copy,
-                .shader = shader,
-                .layout = layout,
-                .index_type = .UINT32,
-                .cull_mode = .NONE,
-                .face_winding = .CW,
-                .depth = .{
-                    .write_enabled = true,
-                    .compare = .LESS_EQUAL,
-                },
-            };
-
-            // enable transparency between shader passes
-            p.colors[0].blend.enabled = true;
-            p.colors[0].blend.src_factor_rgb = .SRC_ALPHA;
-            p.colors[0].blend.dst_factor_rgb = .ONE_MINUS_SRC_ALPHA;
-
-            break :blk p;
-        };
-        const pipeline = sokol.gfx.makePipeline(pipe_desc);
-        errdefer sokol.gfx.destroyPipeline(pipeline);
-
-        return .{
+        return Shader{
             .allocator = allocator,
             .label = label_copy,
             .vs_source = vs_source_copy,
             .fs_source = fs_source_copy,
             .shader = shader,
-            .pipeline = pipeline,
         };
     }
 
     pub fn deinit(self: *const Shader) void {
         sokol.gfx.destroyShader(self.shader);
-        sokol.gfx.destroyPipeline(self.pipeline);
-
         self.allocator.free(self.vs_source);
         self.allocator.free(self.fs_source);
         self.allocator.free(self.label);
