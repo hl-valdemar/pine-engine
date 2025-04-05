@@ -3,8 +3,8 @@ const std = @import("std");
 const Transform = @import("transform.zig").Transform;
 const Mesh = @import("mesh.zig").Mesh;
 const Material = @import("material.zig").Material;
-const UniqueID = @import("resource_manager.zig").UniqueID;
-const UniqueIDType = @import("resource_manager.zig").UniqueIDType;
+const UniqueID = @import("resource_manager.zig").UniqueId;
+const UniqueIDType = @import("resource_manager.zig").UniqueIdDataType;
 const Light = @import("lighting/light.zig").Light;
 
 pub const SceneVisitor = struct {

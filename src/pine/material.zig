@@ -7,8 +7,8 @@ const Mat4 = math.Mat4;
 const Vec3 = math.Vec3;
 
 const resource_mgr = @import("resource_manager.zig");
-const UniqueIDType = resource_mgr.UniqueIDType;
-const UniqueID = resource_mgr.UniqueID;
+const UniqueIDType = resource_mgr.UniqueIdDataType;
+const UniqueID = resource_mgr.UniqueId;
 
 pub const MaterialProperties = struct {
     // PBR properties

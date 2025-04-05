@@ -4,8 +4,8 @@ pub const ResourceManager = resource_manager.ResourceManager;
 pub const Renderer = renderer.Renderer;
 pub const Camera = camera.Camera;
 pub const Scene = scene.Scene;
-pub const UniqueIDType = resource_manager.UniqueIDType;
-pub const UniqueID = resource_manager.UniqueID;
+pub const UniqueIDType = resource_manager.UniqueIdDataType;
+pub const UniqueID = resource_manager.UniqueId;
 pub const Light = light.Light;
 pub const ShaderPass = shader.ShaderPass;
 

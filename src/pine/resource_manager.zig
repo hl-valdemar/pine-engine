@@ -13,15 +13,15 @@ const Vec3 = math.Vec3;
 const Quaternion = math.Quaternion;
 
 // resource IDs
-pub const UniqueIDType = u64;
+pub const UniqueIdDataType = u64;
 
 // ID manager
-pub const UniqueID = struct {
-    pub const INVALID: UniqueIDType = 0;
+pub const UniqueId = struct {
+    pub const INVALID: UniqueIdDataType = 0;
 
-    var next_id: UniqueIDType = INVALID + 1; // first valid ID
+    var next_id: UniqueIdDataType = INVALID + 1; // first valid ID
 
-    pub fn generate() UniqueIDType {
+    pub fn generate() UniqueIdDataType {
         defer next_id += 1;
         return next_id;
     }
@@ -29,16 +29,16 @@ pub const UniqueID = struct {
 
 pub const ResourceManager = struct {
     allocator: std.mem.Allocator,
-    meshes: std.AutoHashMap(UniqueIDType, Mesh),
-    shaders: std.AutoHashMap(UniqueIDType, Shader),
-    materials: std.AutoHashMap(UniqueIDType, Material),
+    meshes: std.AutoHashMap(UniqueIdDataType, Mesh),
+    shaders: std.AutoHashMap(UniqueIdDataType, Shader),
+    materials: std.AutoHashMap(UniqueIdDataType, Material),
 
     pub fn init(allocator: std.mem.Allocator) ResourceManager {
         return .{
             .allocator = allocator,
-            .meshes = std.AutoHashMap(UniqueIDType, Mesh).init(allocator),
-            .shaders = std.AutoHashMap(UniqueIDType, Shader).init(allocator),
-            .materials = std.AutoHashMap(UniqueIDType, Material).init(allocator),
+            .meshes = std.AutoHashMap(UniqueIdDataType, Mesh).init(allocator),
+            .shaders = std.AutoHashMap(UniqueIdDataType, Shader).init(allocator),
+            .materials = std.AutoHashMap(UniqueIdDataType, Material).init(allocator),
         };
     }
 
@@ -74,8 +74,8 @@ pub const ResourceManager = struct {
         normals: ?[]const f32,
         colors: ?[]const f32,
         indices: []const u32,
-    ) !UniqueIDType {
-        const new_id = UniqueID.generate();
+    ) !UniqueIdDataType {
+        const new_id = UniqueId.generate();
         try self.meshes.put(new_id, try Mesh.init(
             self.allocator,
             label,
@@ -100,7 +100,7 @@ pub const ResourceManager = struct {
 
     pub fn getMesh(
         self: *ResourceManager,
-        id: UniqueIDType,
+        id: UniqueIdDataType,
     ) ?*Mesh {
         return self.meshes.getPtr(id);
     }
@@ -113,8 +113,8 @@ pub const ResourceManager = struct {
         vertex_source: []const u8,
         fragment_source: []const u8,
         backend: sokol.gfx.Backend,
-    ) !UniqueIDType {
-        const new_id = UniqueID.generate();
+    ) !UniqueIdDataType {
+        const new_id = UniqueId.generate();
         try self.shaders.put(new_id, try Shader.init(
             self.allocator,
             label,
@@ -127,7 +127,7 @@ pub const ResourceManager = struct {
 
     pub fn destroyShader(
         self: *ResourceManager,
-        id: UniqueIDType,
+        id: UniqueIdDataType,
     ) bool {
         if (self.shaders.fetchRemove(id)) |entry| {
             entry.value.deinit();
@@ -138,7 +138,7 @@ pub const ResourceManager = struct {
 
     pub fn getShader(
         self: *ResourceManager,
-        id: UniqueIDType,
+        id: UniqueIdDataType,
     ) ?*Shader {
         return self.shaders.getPtr(id);
     }
@@ -148,8 +148,8 @@ pub const ResourceManager = struct {
     pub fn createMaterial(
         self: *ResourceManager,
         label: []const u8,
-    ) !UniqueIDType {
-        const new_id = UniqueID.generate();
+    ) !UniqueIdDataType {
+        const new_id = UniqueId.generate();
         try self.materials.put(new_id, try Material.init(
             self.allocator,
             label,
@@ -159,7 +159,7 @@ pub const ResourceManager = struct {
 
     pub fn destroyMaterial(
         self: *ResourceManager,
-        id: UniqueIDType,
+        id: UniqueIdDataType,
     ) void {
         if (self.materials.fetchRemove(id)) |entry| {
             entry.value.deinit();
@@ -170,7 +170,7 @@ pub const ResourceManager = struct {
 
     pub fn getMaterial(
         self: *ResourceManager,
-        id: UniqueIDType,
+        id: UniqueIdDataType,
     ) ?*Material {
         return self.materials.getPtr(id);
     }

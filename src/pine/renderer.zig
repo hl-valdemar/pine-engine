@@ -11,7 +11,10 @@ const Transform = @import("transform.zig").Transform;
 
 const LightManager = @import("lighting/light_manager.zig").LightManager;
 const LightCollector = @import("lighting/light_collector.zig").LightCollector;
-const LightProperties = @import("lighting/light.zig").LightProperties;
+
+const light = @import("lighting/light.zig");
+const LightType = light.LightType;
+const LightProperties = light.LightProperties;
 
 const shd = @import("shader.zig");
 const Shader = shd.Shader;
@@ -28,7 +31,7 @@ const Vec3 = math.Vec3;
 const Vec4 = math.Vec4;
 const Mat4 = math.Mat4;
 
-const UniqueID = @import("resource_manager.zig").UniqueID;
+const UniqueID = @import("resource_manager.zig").UniqueId;
 
 pub const AttributeSlots = struct {
     pub const POSITION = 0;
@@ -58,6 +61,9 @@ pub const Renderer = struct {
 
     num_shader_passes: usize = 0,
     ping_pong_buffers: [2]PingPongBuffer = undefined,
+
+    current_frame_buffer: *PingPongBuffer = undefined,
+    previous_frame_buffer: *PingPongBuffer = undefined,
 
     offscreen_pipeline_desc: sokol.gfx.PipelineDesc = .{},
     display_pipeline_desc: sokol.gfx.PipelineDesc = .{},
@@ -202,6 +208,9 @@ pub const Renderer = struct {
             .color_img = sokol.gfx.makeImage(color_img_desc),
             .depth_img = sokol.gfx.makeImage(depth_img_desc),
         };
+
+        self.current_frame_buffer = &self.ping_pong_buffers[0];
+        self.previous_frame_buffer = &self.ping_pong_buffers[1];
     }
 
     fn setupSamplers(self: *Renderer) void {
@@ -251,97 +260,91 @@ pub const Renderer = struct {
         try self.render_queue.append(cmd);
     }
 
+    fn computePass(self: *const Renderer, is_final_pass: bool) sokol.gfx.Pass {
+        var render_pass = sokol.gfx.Pass{};
+
+        // check for final pass
+        if (is_final_pass) {
+            render_pass.action.colors[0] = .{
+                .load_action = .CLEAR,
+                .clear_value = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
+            };
+            render_pass.action.depth = .{
+                .load_action = .CLEAR,
+                .clear_value = 1,
+            };
+            render_pass.swapchain = sokol.glue.swapchain(); // render to screen
+            render_pass.label = "swapchain-pass";
+
+            return render_pass;
+        }
+
+        // else intermediate pass
+        var attachment_desc = sokol.gfx.AttachmentsDesc{};
+        attachment_desc.colors[0].image = self.current_frame_buffer.color_img;
+        attachment_desc.depth_stencil.image = self.current_frame_buffer.depth_img;
+        attachment_desc.label = "offscreen-attachments";
+
+        render_pass.action.colors[0] = .{
+            .load_action = .LOAD,
+            .store_action = .STORE,
+        };
+        render_pass.action.depth = .{
+            .load_action = .LOAD,
+            .store_action = .STORE,
+        };
+
+        render_pass.attachments = sokol.gfx.makeAttachments(attachment_desc);
+        render_pass.label = "offscreen-pass";
+
+        return render_pass;
+    }
+
+    fn computePipeline(self: *const Renderer, is_final_pass: bool, shader: *const Shader) sokol.gfx.Pipeline {
+        const pipeline_desc = if (is_final_pass) blk: {
+            var pipeline_desc = self.display_pipeline_desc;
+            pipeline_desc.shader = shader.shader;
+            break :blk pipeline_desc;
+        } else blk: {
+            var pipeline_desc = self.offscreen_pipeline_desc;
+            pipeline_desc.shader = shader.shader;
+            break :blk pipeline_desc;
+        };
+
+        return sokol.gfx.makePipeline(pipeline_desc);
+    }
+
+    fn swapTargetBuffers(self: *Renderer) void {
+        const current_frame_buffer_tmp = self.current_frame_buffer;
+        self.current_frame_buffer = self.previous_frame_buffer;
+        self.previous_frame_buffer = current_frame_buffer_tmp;
+    }
+
     fn executeRenderCommand(
-        self: *const Renderer,
+        self: *Renderer,
         cmd: RenderCommand,
         resource_manager: *ResourceManager,
     ) void {
         for (cmd.material.shader_passes.items, 0..) |shader_pass, i| {
             const is_final_pass = i == self.num_shader_passes - 1;
-            const current_buffer_idx: usize = @intCast(@mod(i, self.num_shader_passes));
 
-            var render_pass = sokol.gfx.Pass{};
+            // compute pass to use
+            const pass = self.computePass(is_final_pass);
+            sokol.gfx.beginPass(pass);
 
-            // choose the relevant render pass
-            if (is_final_pass) {
-                // last pass, render to screen
-                render_pass.action.colors[0] = .{
-                    .load_action = .CLEAR,
-                    .clear_value = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
-                };
-                render_pass.swapchain = sokol.glue.swapchain(); // render to screen
-                render_pass.label = "swapchain-pass";
-            } else {
-                // intermediate pass, render to ping pong buffers
-                var attachment_desc = sokol.gfx.AttachmentsDesc{};
-                attachment_desc.colors[0].image = self.ping_pong_buffers[current_buffer_idx].color_img;
-                attachment_desc.depth_stencil.image = self.ping_pong_buffers[current_buffer_idx].depth_img;
-                attachment_desc.label = "offscreen-attachments";
-
-                render_pass.attachments = sokol.gfx.makeAttachments(attachment_desc);
-                errdefer sokol.gfx.destroyAttachments(render_pass.attachments);
-
-                // set appropriate clear values for the first pass
-                if (i == 0) {
-                    render_pass.action.colors[0] = .{
-                        .load_action = .CLEAR,
-                        .clear_value = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
-                        .store_action = .STORE,
-                    };
-                    render_pass.action.depth = .{
-                        .load_action = .CLEAR,
-                        .clear_value = 1.0,
-                        .store_action = .STORE,
-                    };
-                } else {
-                    render_pass.action.colors[0] = .{
-                        .load_action = .LOAD,
-                        .store_action = .STORE,
-                    };
-                    render_pass.action.depth = .{
-                        .load_action = .LOAD,
-                        .store_action = .STORE,
-                    };
-                }
-
-                render_pass.label = "offscreen-pass";
-            }
-
-            // render using chosen pass
-            sokol.gfx.beginPass(render_pass);
-
-            // wrap the ping pong buffers
-            const previous_idx: usize = @intCast(@mod(
-                @as(i32, @intCast(i)) - 1,
-                @as(i32, @intCast(self.num_shader_passes)),
-            ));
-            const previous_result = self.ping_pong_buffers[previous_idx];
-
+            // compute pipeline to use
             const shader = resource_manager.getShader(shader_pass.shader_id) orelse {
                 plog.err("shader ID '{d}' not found", .{shader_pass.shader_id});
                 return;
             };
-
-            const pipeline_desc = if (is_final_pass) blk: {
-                var pipeline_desc = self.display_pipeline_desc;
-                pipeline_desc.shader = shader.shader;
-                break :blk pipeline_desc;
-            } else blk: {
-                var pipeline_desc = self.offscreen_pipeline_desc;
-                pipeline_desc.shader = shader.shader;
-                break :blk pipeline_desc;
-            };
-
-            const pipeline = sokol.gfx.makePipeline(pipeline_desc);
+            const pipeline = self.computePipeline(is_final_pass, shader);
             defer sokol.gfx.destroyPipeline(pipeline);
-
             sokol.gfx.applyPipeline(pipeline);
 
             // attach previous result
             var bindings = cmd.mesh.bindings;
-            bindings.images[0] = previous_result.color_img;
+            bindings.images[0] = self.previous_frame_buffer.color_img;
             bindings.samplers[0] = self.sampler;
-
             sokol.gfx.applyBindings(bindings);
 
             const vs_params = VsParams{
@@ -350,7 +353,18 @@ pub const Renderer = struct {
                 .projection = self.camera.projection,
             };
 
-            const light_entry = self.light_manager.directional_lights.getLastOrNull();
+            // const light_entry = self.light_manager.directional_lights.getLastOrNull();
+            // const light_properties = if (light_entry) |entry| blk: {
+            //     break :blk entry.light.properties;
+            // } else blk: {
+            //     break :blk null;
+            // };
+            const light_entry = self.light_manager.point_lights.getLastOrNull();
+            const light_type = if (light_entry) |entry| blk: {
+                break :blk entry.light.light_type;
+            } else blk: {
+                break :blk null;
+            };
             const light_properties = if (light_entry) |entry| blk: {
                 break :blk entry.light.properties;
             } else blk: {
@@ -358,6 +372,7 @@ pub const Renderer = struct {
             };
 
             const fs_params = FsParams{
+                .light_type = light_type orelse LightType.Directional,
                 .light_properties = light_properties orelse LightProperties{},
                 .camera_pos = self.camera.position,
             };
@@ -367,12 +382,14 @@ pub const Renderer = struct {
 
             const first_element = 0;
             const element_count: u32 = @intCast(cmd.mesh.indices.len);
-
             sokol.gfx.draw(first_element, element_count, cmd.instance_count);
 
             sokol.gfx.endPass();
 
-            sokol.gfx.destroyAttachments(render_pass.attachments);
+            sokol.gfx.destroyAttachments(pass.attachments);
+
+            // remember to swap buffers!
+            self.swapTargetBuffers();
         }
     }
 };

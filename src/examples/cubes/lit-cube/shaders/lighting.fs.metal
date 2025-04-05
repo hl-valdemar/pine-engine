@@ -3,13 +3,21 @@
 
 using namespace metal;
 
+enum LightType {
+    Directional = 0,
+    Point = 1,
+};
+
 struct LightProperties {
+    float3 position;
     float3 direction;
     float3 color;
     float intensity;
+    bool is_active;
 };
 
 struct FsParams {
+    LightType light_type;
     LightProperties light_props;
     float3 camera_pos;
 };
@@ -30,7 +38,19 @@ fragment float4 fs_main(
     float2 tex_coord = in.position.xy / float2(previous_pass_texture.get_width(), previous_pass_texture.get_height());
     float4 previous_color = previous_pass_texture.sample(texture_sampler, tex_coord);
 
-    float3 light_dir = normalize(-params.light_props.direction);
+    // make sure the light is active
+    if (!params.light_props.is_active) {
+        return previous_color;
+    }
+
+    // calculate light direction based on light type
+    float3 light_dir;
+    if (params.light_type == Directional) {
+        light_dir = normalize(-params.light_props.direction);
+    } else if (params.light_type == Point) {
+        light_dir = normalize(params.light_props.position - in.frag_pos);
+    }
+
     float3 light_color = params.light_props.color * params.light_props.intensity;
 
     // ambient

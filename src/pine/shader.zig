@@ -1,11 +1,13 @@
 const std = @import("std");
 const sokol = @import("sokol");
 
-const LightProperties = @import("lighting/light.zig").LightProperties;
+const light = @import("lighting/light.zig");
+const LightProperties = light.LightProperties;
+const LightType = light.LightType;
 
 const resource_manager = @import("resource_manager.zig");
-const UniqueID = resource_manager.UniqueID;
-const UniqueIDType = resource_manager.UniqueIDType;
+const UniqueID = resource_manager.UniqueId;
+const UniqueIDType = resource_manager.UniqueIdDataType;
 
 const math = @import("math.zig");
 const Mat4 = math.Mat4;
@@ -19,6 +21,7 @@ pub const VsParams = extern struct {
 };
 
 pub const FsParams = extern struct {
+    light_type: LightType,
     light_properties: LightProperties,
     camera_pos: Vec3 align(16),
 };

@@ -73,7 +73,9 @@ const WorldState = struct {
 
             // add light to scene (simulate a sun - from below?)
             var sun_node = self.scene.createNode("sun") catch unreachable;
-            sun_node.light = pine.Light.initDirectional(pine.math.Vec3.with(0, 1, 0), pine.math.Vec3.ones(), 1);
+            sun_node.transform.position = pine.math.Vec3.ones();
+            // sun_node.light = pine.Light.initDirectional(pine.math.Vec3.with(1, 1, 0), pine.math.Vec3.with(0, 0, 1), 1);
+            sun_node.light = pine.Light.initPoint(pine.math.Vec3.ones(), 1);
             self.scene.root.addChild(sun_node) catch unreachable;
 
             // add cube node to scene
