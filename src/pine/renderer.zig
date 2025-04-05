@@ -208,8 +208,8 @@ pub const Renderer = struct {
         const sampler_desc = sokol.gfx.SamplerDesc{
             .min_filter = .LINEAR,
             .mag_filter = .LINEAR,
-            .wrap_u = .CLAMP_TO_EDGE,
-            .wrap_v = .CLAMP_TO_EDGE,
+            .wrap_u = .REPEAT,
+            .wrap_v = .REPEAT,
             .label = "texture-sampler",
         };
 
@@ -279,11 +279,30 @@ pub const Renderer = struct {
                 attachment_desc.label = "offscreen-attachments";
 
                 render_pass.attachments = sokol.gfx.makeAttachments(attachment_desc);
+                errdefer sokol.gfx.destroyAttachments(render_pass.attachments);
 
-                render_pass.action.colors[0] = .{
-                    .load_action = .LOAD,
-                    .store_action = .STORE,
-                };
+                // set appropriate clear values for the first pass
+                if (i == 0) {
+                    render_pass.action.colors[0] = .{
+                        .load_action = .CLEAR,
+                        .clear_value = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
+                        .store_action = .STORE,
+                    };
+                    render_pass.action.depth = .{
+                        .load_action = .CLEAR,
+                        .clear_value = 1.0,
+                        .store_action = .STORE,
+                    };
+                } else {
+                    render_pass.action.colors[0] = .{
+                        .load_action = .LOAD,
+                        .store_action = .STORE,
+                    };
+                    render_pass.action.depth = .{
+                        .load_action = .LOAD,
+                        .store_action = .STORE,
+                    };
+                }
 
                 render_pass.label = "offscreen-pass";
             }
@@ -298,36 +317,25 @@ pub const Renderer = struct {
             ));
             const previous_result = self.ping_pong_buffers[previous_idx];
 
-            const shader = if (resource_manager.getShader(shader_pass.shader_id)) |s| blk: {
-                break :blk s;
-            } else {
+            const shader = resource_manager.getShader(shader_pass.shader_id) orelse {
                 plog.err("shader ID '{d}' not found", .{shader_pass.shader_id});
                 return;
             };
 
-            const pipeline = if (is_final_pass) blk: {
-                // render to screen
+            const pipeline_desc = if (is_final_pass) blk: {
                 var pipeline_desc = self.display_pipeline_desc;
                 pipeline_desc.shader = shader.shader;
-
-                const pipeline = sokol.gfx.makePipeline(pipeline_desc);
-                errdefer sokol.gfx.destroyPipeline(pipeline);
-
-                sokol.gfx.applyPipeline(pipeline);
-
-                break :blk pipeline;
+                break :blk pipeline_desc;
             } else blk: {
-                // render offscreen
                 var pipeline_desc = self.offscreen_pipeline_desc;
                 pipeline_desc.shader = shader.shader;
-
-                const pipeline = sokol.gfx.makePipeline(pipeline_desc);
-                errdefer sokol.gfx.destroyPipeline(pipeline);
-
-                sokol.gfx.applyPipeline(pipeline);
-
-                break :blk pipeline;
+                break :blk pipeline_desc;
             };
+
+            const pipeline = sokol.gfx.makePipeline(pipeline_desc);
+            defer sokol.gfx.destroyPipeline(pipeline);
+
+            sokol.gfx.applyPipeline(pipeline);
 
             // attach previous result
             var bindings = cmd.mesh.bindings;
@@ -365,7 +373,6 @@ pub const Renderer = struct {
             sokol.gfx.endPass();
 
             sokol.gfx.destroyAttachments(render_pass.attachments);
-            sokol.gfx.destroyPipeline(pipeline);
         }
     }
 };

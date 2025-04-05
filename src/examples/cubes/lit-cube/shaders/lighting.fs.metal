@@ -10,19 +10,28 @@ struct LightProperties {
 };
 
 struct FsParams {
-    LightProperties light_properties;
+    LightProperties light_props;
     float3 camera_pos;
 };
 
 struct MainIn {
-    float4 color0 [[user(locn0)]];
-    float3 normal [[user(locn1)]];
+    float4 position [[position]];
+    float3 normal [[user(locn0)]];
+    float4 color0 [[user(locn1)]];
     float3 frag_pos [[user(locn2)]];
 };
 
-fragment float4 fs_main(MainIn in [[stage_in]], constant FsParams& params [[buffer(1)]]) {
-    float3 light_dir = normalize(-params.light_properties.direction);
-    float3 light_color = params.light_properties.color * params.light_properties.intensity;
+fragment float4 fs_main(
+    MainIn in [[stage_in]],
+    constant FsParams& params [[buffer(1)]],
+    texture2d<float> previous_pass_texture [[texture(0)]],
+    sampler texture_sampler [[sampler(0)]]
+) {
+    float2 tex_coord = in.position.xy / float2(previous_pass_texture.get_width(), previous_pass_texture.get_height());
+    float4 previous_color = previous_pass_texture.sample(texture_sampler, tex_coord);
+
+    float3 light_dir = normalize(-params.light_props.direction);
+    float3 light_color = params.light_props.color * params.light_props.intensity;
 
     // ambient
     float ambient_strength = 0.1;
@@ -38,9 +47,9 @@ fragment float4 fs_main(MainIn in [[stage_in]], constant FsParams& params [[buff
     float3 halfway_dir = normalize(light_dir + view_dir);
     float spec = pow(max(dot(normal, halfway_dir), 0.0), 64.0); // higher exponent = sharper highlight
     float specular_strength = 0.0;
-    float3 specular = specular_strength * spec * params.light_properties.color;
+    float3 specular = specular_strength * spec * params.light_props.color;
     
-    float3 blin_phong = (ambient + diffuse) * in.color0.rgb + specular;
+    float3 blin_phong = (ambient + diffuse) * previous_color.rgb + specular;
 
     // gamma correction
     //float gamma = 1.25;

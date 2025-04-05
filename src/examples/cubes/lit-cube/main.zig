@@ -7,7 +7,7 @@ pub const std_options = std.Options{
 };
 
 const WorldState = struct {
-    const cube_label: []const u8 = "lighting-example-cube";
+    const cube_label: []const u8 = "lit-cube-example";
 
     var cube_node_id: u64 = 0;
 
@@ -47,20 +47,20 @@ const WorldState = struct {
 
     pub fn run(self: *WorldState) void {
         sokol.app.run(sokol.app.Desc{
-            .init_userdata_cb = sokolInitLightingExample,
-            .frame_userdata_cb = sokolFrameLightingExample,
-            .event_userdata_cb = sokolEventLightingExample,
+            .init_userdata_cb = sokolInitLitCubeExample,
+            .frame_userdata_cb = sokolFrameLitCubeExample,
+            .event_userdata_cb = sokolEventLitCubeExample,
             .user_data = self,
             .logger = .{ .func = sokol.log.func },
             .icon = .{ .sokol_default = true },
             .sample_count = 4,
             .width = 4 * 300,
             .height = 3 * 300,
-            .window_title = "Pine: Lighting Example",
+            .window_title = "Pine: Lit Cube Example",
         });
     }
 
-    export fn sokolInitLightingExample(world_state: ?*anyopaque) void {
+    export fn sokolInitLitCubeExample(world_state: ?*anyopaque) void {
         if (world_state) |state| {
             const self: *WorldState = @alignCast(@ptrCast(state));
 
@@ -69,26 +69,7 @@ const WorldState = struct {
                 .logger = .{ .func = sokol.log.func },
             });
 
-            var sun_node = self.scene.createNode("sun-light") catch unreachable;
-            const sun_light = pine.Light.initDirectional(
-                pine.math.Vec3.with(0, -1, -0.5), // direction
-                pine.math.Vec3.with(1, 1, 1), // white light
-                1, // intensity
-            );
-            sun_node.light = sun_light;
-            self.scene.root.addChild(sun_node) catch unreachable;
-
-            const shader_id = self.resource_manager.createShader(
-                cube_label,
-                @embedFile("shaders/lighting.vs.metal"),
-                @embedFile("shaders/lighting.fs.metal"),
-                sokol.gfx.queryBackend(),
-            ) catch unreachable;
-
-            const material_id = self.resource_manager.createMaterial(cube_label) catch unreachable;
-            if (self.resource_manager.getMaterial(material_id)) |m| {
-                m.addShaderPass(pine.ShaderPass{ .shader_id = shader_id }) catch unreachable;
-            }
+            self.renderer.initAfterSokol();
 
             const cube_mesh_id = self.resource_manager.createMesh(
                 cube_label,
@@ -98,15 +79,37 @@ const WorldState = struct {
                 &pine.primitive.Cube.INDICES,
             ) catch unreachable;
 
+            const cube_shader_id = self.resource_manager.createShader(
+                cube_label,
+                pine.primitive.Cube.BASE_VS_SHADER,
+                pine.primitive.Cube.BASE_FS_SHADER,
+                sokol.gfx.queryBackend(),
+            ) catch unreachable;
+
+            const lighting_shader_id = self.resource_manager.createShader(
+                "lighting-shader",
+                @embedFile("shaders/lighting.vs.metal"),
+                @embedFile("shaders/lighting.fs.metal"),
+                sokol.gfx.queryBackend(),
+            ) catch unreachable;
+
+            const cube_material_id = self.resource_manager.createMaterial(cube_label) catch unreachable;
+
+            if (self.resource_manager.getMaterial(cube_material_id)) |m| {
+                m.addShaderPass(pine.ShaderPass{ .shader_id = cube_shader_id }) catch unreachable;
+                m.addShaderPass(pine.ShaderPass{ .shader_id = lighting_shader_id }) catch unreachable;
+            }
+
             var cube_node = self.scene.createNode(cube_label) catch unreachable;
             cube_node.mesh_id = cube_mesh_id;
-            cube_node.material_id = material_id;
+            cube_node.material_id = cube_material_id;
             self.scene.root.addChild(cube_node) catch unreachable;
+
             cube_node_id = cube_node.id;
         }
     }
 
-    export fn sokolFrameLightingExample(world_state: ?*anyopaque) void {
+    export fn sokolFrameLitCubeExample(world_state: ?*anyopaque) void {
         if (world_state) |state| {
             const self: *WorldState = @alignCast(@ptrCast(state));
 
@@ -123,13 +126,18 @@ const WorldState = struct {
         }
     }
 
-    export fn sokolEventLightingExample(ev: [*c]const sokol.app.Event, world_state: ?*anyopaque) void {
+    export fn sokolEventLitCubeExample(ev: [*c]const sokol.app.Event, world_state: ?*anyopaque) void {
         if (world_state) |state| {
             const self: *WorldState = @alignCast(@ptrCast(state));
-            _ = self;
 
-            if (ev.*.key_code == .ESCAPE and ev.*.type == .KEY_DOWN) {
+            if (ev.*.key_code == .ESCAPE and ev.*.type == .KEY_UP) {
                 sokol.app.requestQuit();
+            }
+
+            if (ev.*.key_code == .SPACE and ev.*.type == .KEY_UP) {
+                if (self.scene.getNodeByUID(cube_node_id)) |cube| {
+                    cube.visible = !cube.visible;
+                }
             }
         }
     }

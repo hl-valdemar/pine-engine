@@ -1,4 +1,7 @@
 pub const Cube = struct {
+    pub const BASE_VS_SHADER: []const u8 = @embedFile("shaders/base.vs.metal");
+    pub const BASE_FS_SHADER: []const u8 = @embedFile("shaders/base.fs.metal");
+
     // for a cube, we need 36 vertices (6 faces * 2 triangles * 3 vertices)
     pub const VERTICES = [_]f32{
         // Back face (negative z)

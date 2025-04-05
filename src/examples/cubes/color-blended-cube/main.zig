@@ -7,7 +7,7 @@ pub const std_options = std.Options{
 };
 
 const WorldState = struct {
-    const cube_label: []const u8 = "example-cube";
+    const cube_label: []const u8 = "color-blended-cube-example";
 
     var cube_node_id: u64 = 0;
 
@@ -47,20 +47,20 @@ const WorldState = struct {
 
     pub fn run(self: *WorldState) void {
         sokol.app.run(sokol.app.Desc{
-            .init_userdata_cb = sokolInitCubeExample,
-            .frame_userdata_cb = sokolFrameCubeExample,
-            .event_userdata_cb = sokolEventCubeExample,
+            .init_userdata_cb = sokolInitColorBlendedCubeExample,
+            .frame_userdata_cb = sokolFrameColorBlendedCubeExample,
+            .event_userdata_cb = sokolEventColorBlendedCubeExample,
             .user_data = self,
             .logger = .{ .func = sokol.log.func },
             .icon = .{ .sokol_default = true },
             .sample_count = 4,
             .width = 4 * 300,
             .height = 3 * 300,
-            .window_title = "Pine: Cube Example",
+            .window_title = "Pine: Color Blended Cube Example",
         });
     }
 
-    export fn sokolInitCubeExample(world_state: ?*anyopaque) void {
+    export fn sokolInitColorBlendedCubeExample(world_state: ?*anyopaque) void {
         if (world_state) |state| {
             const self: *WorldState = @alignCast(@ptrCast(state));
 
@@ -81,15 +81,15 @@ const WorldState = struct {
 
             const cube_shader_id = self.resource_manager.createShader(
                 cube_label,
-                @embedFile("shaders/cube.vs.metal"),
-                @embedFile("shaders/cube.fs.metal"),
+                pine.primitive.Cube.BASE_VS_SHADER,
+                pine.primitive.Cube.BASE_FS_SHADER,
                 sokol.gfx.queryBackend(),
             ) catch unreachable;
 
-            const paint_cube_shader_id = self.resource_manager.createShader(
+            const color_blend_shader_id = self.resource_manager.createShader(
                 cube_label,
-                @embedFile("shaders/cube.vs.metal"),
-                @embedFile("shaders/paint_cube.fs.metal"),
+                @embedFile("shaders/color_blend.vs.metal"),
+                @embedFile("shaders/color_blend.fs.metal"),
                 sokol.gfx.queryBackend(),
             ) catch unreachable;
 
@@ -97,7 +97,7 @@ const WorldState = struct {
 
             if (self.resource_manager.getMaterial(cube_material_id)) |m| {
                 m.addShaderPass(pine.ShaderPass{ .shader_id = cube_shader_id }) catch unreachable;
-                m.addShaderPass(pine.ShaderPass{ .shader_id = paint_cube_shader_id }) catch unreachable;
+                m.addShaderPass(pine.ShaderPass{ .shader_id = color_blend_shader_id }) catch unreachable;
             }
 
             var cube_node = self.scene.createNode(cube_label) catch unreachable;
@@ -109,7 +109,7 @@ const WorldState = struct {
         }
     }
 
-    export fn sokolFrameCubeExample(world_state: ?*anyopaque) void {
+    export fn sokolFrameColorBlendedCubeExample(world_state: ?*anyopaque) void {
         if (world_state) |state| {
             const self: *WorldState = @alignCast(@ptrCast(state));
 
@@ -126,7 +126,7 @@ const WorldState = struct {
         }
     }
 
-    export fn sokolEventCubeExample(ev: [*c]const sokol.app.Event, world_state: ?*anyopaque) void {
+    export fn sokolEventColorBlendedCubeExample(ev: [*c]const sokol.app.Event, world_state: ?*anyopaque) void {
         if (world_state) |state| {
             const self: *WorldState = @alignCast(@ptrCast(state));
 

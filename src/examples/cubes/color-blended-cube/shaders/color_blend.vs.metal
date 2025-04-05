@@ -9,18 +9,17 @@ struct VsParams {
     float4x4 projection;
 };
 
+struct MainIn {
+    float3 position [[attribute(0)]];
+    float3 normal [[attribute(1)]];
+    float4 color0 [[attribute(2)]];
+};
+
 struct MainOut {
     float4 position [[position]];
     float4 color0 [[user(locn0)]];
     float3 world_pos [[user(locn1)]];
     float3 normal [[user(locn2)]];
-};
-
-struct MainIn {
-    float3 position [[attribute(0)]];
-    float3 normal [[attribute(1)]];
-    float4 color0 [[attribute(2)]];
-    float3 texcoord0 [[attribute(3)]];
 };
 
 vertex MainOut vs_main(MainIn in [[stage_in]], constant VsParams& params [[buffer(0)]]) {

@@ -34,8 +34,9 @@ fn runExamples(args: Args) ExampleError!void {
             \\
             \\  Examples with available options:
             \\    
-            \\    cube
-            \\    lighting
+            \\    basic-cube
+            \\    color-blended-cube
+            // \\    lighting
             \\    terrain
             \\    grass --terrain-type=[perlin,trig]
             \\    instancing
@@ -46,12 +47,15 @@ fn runExamples(args: Args) ExampleError!void {
         stdout.print("{s}", .{help_msg}) catch {
             return ExampleError.StdOut;
         };
-    } else if (std.mem.eql(u8, args[1], "cube")) {
+    } else if (std.mem.eql(u8, args[1], "basic-cube")) {
         if (args.len > 2) return ExampleError.TooManyArguments;
-        try @import("cube/main.zig").main();
-    } else if (std.mem.eql(u8, args[1], "lighting")) {
+        try @import("cubes/basic-cube/main.zig").main();
+    } else if (std.mem.eql(u8, args[1], "color-blended-cube")) {
         if (args.len > 2) return ExampleError.TooManyArguments;
-        try @import("lighting//main.zig").main();
+        try @import("cubes/color-blended-cube/main.zig").main();
+    } else if (std.mem.eql(u8, args[1], "lit-cube")) {
+        if (args.len > 2) return ExampleError.TooManyArguments;
+        try @import("cubes/lit-cube/main.zig").main();
     } else if (std.mem.eql(u8, args[1], "terrain")) {
         if (args.len > 2) return ExampleError.TooManyArguments;
         try @import("terrain/main.zig").main();

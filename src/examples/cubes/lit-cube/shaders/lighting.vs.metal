@@ -9,17 +9,17 @@ struct VsParams {
     float4x4 projection;
 };
 
-struct MainOut {
-    float4 position [[position]];
-    float4 color0 [[user(locn0)]];
-    float3 normal [[user(locn1)]];
-    float3 frag_pos [[user(locn2)]];
-};
-
 struct MainIn {
     float3 position [[attribute(0)]];
     float3 normal [[attribute(1)]];
     float4 color0 [[attribute(2)]];
+};
+
+struct MainOut {
+    float4 position [[position]];
+    float3 normal [[user(locn0)]];
+    float4 color0 [[user(locn1)]];
+    float3 frag_pos [[user(locn2)]];
 };
 
 vertex MainOut vs_main(MainIn in [[stage_in]], constant VsParams& params [[buffer(0)]]) {
@@ -31,7 +31,7 @@ vertex MainOut vs_main(MainIn in [[stage_in]], constant VsParams& params [[buffe
 
     // transform position and normal for lighting
     out.frag_pos = (params.model * float4(in.position, 1.0)).xyz;
-    
+
     // normal matrix (transpose of inverse of model matrix, simplified for uniform scaling)
     float3x3 normal_matrix = float3x3(
         params.model[0].xyz, 
@@ -41,6 +41,6 @@ vertex MainOut vs_main(MainIn in [[stage_in]], constant VsParams& params [[buffe
     out.normal = normalize(normal_matrix * float4(in.normal, 0).xyz);
 
     out.color0 = in.color0;
-    
+
     return out;
 }
