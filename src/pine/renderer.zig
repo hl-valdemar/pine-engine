@@ -338,7 +338,6 @@ pub const Renderer = struct {
                 return;
             };
             const pipeline = self.computePipeline(is_final_pass, shader);
-            defer sokol.gfx.destroyPipeline(pipeline);
             sokol.gfx.applyPipeline(pipeline);
 
             // attach previous result
@@ -353,20 +352,16 @@ pub const Renderer = struct {
                 .projection = self.camera.projection,
             };
 
-            // const light_entry = self.light_manager.directional_lights.getLastOrNull();
-            // const light_properties = if (light_entry) |entry| blk: {
-            //     break :blk entry.light.properties;
-            // } else blk: {
-            //     break :blk null;
-            // };
-            const light_entry = self.light_manager.point_lights.getLastOrNull();
-            const light_type = if (light_entry) |entry| blk: {
-                break :blk entry.light.light_type;
+            const light_entry = self.light_manager.directional_lights.getLastOrNull();
+            // const light_entry = self.light_manager.point_lights.getLastOrNull();
+
+            const light_properties = if (light_entry) |entry| blk: {
+                break :blk entry.light.properties;
             } else blk: {
                 break :blk null;
             };
-            const light_properties = if (light_entry) |entry| blk: {
-                break :blk entry.light.properties;
+            const light_type = if (light_entry) |entry| blk: {
+                break :blk entry.light.light_type;
             } else blk: {
                 break :blk null;
             };
@@ -387,6 +382,7 @@ pub const Renderer = struct {
             sokol.gfx.endPass();
 
             sokol.gfx.destroyAttachments(pass.attachments);
+            sokol.gfx.destroyPipeline(pipeline);
 
             // remember to swap buffers!
             self.swapTargetBuffers();

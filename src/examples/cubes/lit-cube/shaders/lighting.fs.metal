@@ -66,7 +66,7 @@ fragment float4 fs_main(
     float3 view_dir = normalize(params.camera_pos - in.frag_pos);
     float3 halfway_dir = normalize(light_dir + view_dir);
     float spec = pow(max(dot(normal, halfway_dir), 0.0), 64.0); // higher exponent = sharper highlight
-    float specular_strength = 0.0;
+    float specular_strength = 0.5;
     float3 specular = specular_strength * spec * params.light_props.color;
     
     float3 blin_phong = (ambient + diffuse) * previous_color.rgb + specular;

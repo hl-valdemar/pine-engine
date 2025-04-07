@@ -73,9 +73,9 @@ const WorldState = struct {
 
             // add light to scene (simulate a sun - from below?)
             var sun_node = self.scene.createNode("sun") catch unreachable;
-            sun_node.transform.position = pine.math.Vec3.ones();
-            // sun_node.light = pine.Light.initDirectional(pine.math.Vec3.with(1, 1, 0), pine.math.Vec3.with(0, 0, 1), 1);
-            sun_node.light = pine.Light.initPoint(pine.math.Vec3.ones(), 1);
+            sun_node.transform.position = pine.math.Vec3.ones().scale(10);
+            sun_node.light = pine.Light.initDirectional(pine.math.Vec3.with(1, 1, 0), pine.math.Vec3.ones(), 1);
+            // sun_node.light = pine.Light.initPoint(pine.math.Vec3.ones(), 1);
             self.scene.root.addChild(sun_node) catch unreachable;
 
             // add cube node to scene
@@ -122,6 +122,7 @@ const WorldState = struct {
             const self: *WorldState = @alignCast(@ptrCast(state));
 
             const dt = sokol.app.frameDuration();
+            std.log.info("fps: {d:.2}", .{1 / dt});
 
             if (self.scene.getNodeByUID(cube_node_id)) |cube| {
                 cube.transform.rotate(
