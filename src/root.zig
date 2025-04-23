@@ -7,7 +7,7 @@ pub const std_options = std.Options{
 
 // public exports //
 
-pub const app = @import("app.zig");
-pub const log = @import("log.zig");
+pub const app = @import("pine/app.zig");
+pub const log = @import("pine/log.zig");
 
 // private imports //

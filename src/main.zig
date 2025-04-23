@@ -36,7 +36,10 @@ const EventHandlerSystem = struct {
                 try registry.pushResource(pine.app.Message.RequestQuit);
             }
             if (event.key_code == .ENTER and event.type == .KEY_UP) {
-                std.log.info("ENTER!", .{});
+                std.log.info("ENTER RELEASED!", .{});
+            }
+            if (event.key_code == .ENTER and event.type == .KEY_DOWN) {
+                std.log.info("ENTER DOWN!", .{});
             }
         }
     }

@@ -4,7 +4,7 @@ const Allocator = std.mem.Allocator;
 const pecs = @import("pecs");
 const sokol = @import("sokol");
 
-const pine = @import("root.zig");
+const log = @import("log.zig");
 
 /// For communication outward.
 pub const Event = sokol.app.Event;
@@ -116,7 +116,7 @@ pub const App = struct {
         if (app) |a| {
             const self: *App = @alignCast(@ptrCast(a));
             self.processSystems(.Init) catch |err| {
-                pine.log.err("failed to process systems with tag '{s}': {}", .{ Schedule.Init.toString(), err });
+                log.err("failed to process systems with tag '{s}': {}", .{ Schedule.Init.toString(), err });
             };
         }
     }
@@ -130,21 +130,21 @@ pub const App = struct {
 
             // note: system messages may be added here
             self.processSystems(.Update) catch |err| {
-                pine.log.err(system_process_err_fmt, .{ Schedule.Update.toString(), err });
+                log.err(system_process_err_fmt, .{ Schedule.Update.toString(), err });
             };
 
             self.processSystems(.PostUpdate) catch |err| {
-                pine.log.err(system_process_err_fmt, .{ Schedule.PostUpdate.toString(), err });
+                log.err(system_process_err_fmt, .{ Schedule.PostUpdate.toString(), err });
             };
 
             // clear all events including those not acted upon
             self.registry.clearResource(Event) catch |err| {
-                pine.log.err(resource_clear_err_fmt, .{ @typeName(Event), err });
+                log.err(resource_clear_err_fmt, .{ @typeName(Event), err });
             };
 
             // clear messages from previous iteration
             self.registry.clearResource(Message) catch |err| {
-                pine.log.err(resource_clear_err_fmt, .{ @typeName(Message), err });
+                log.err(resource_clear_err_fmt, .{ @typeName(Message), err });
             };
         }
     }
@@ -155,7 +155,7 @@ pub const App = struct {
 
             // push the event to the relevant resource buffer
             self.registry.pushResource(event.*) catch |err| {
-                pine.log.err("failed to push event resource: {}", .{err});
+                log.err("failed to push event resource: {}", .{err});
             };
         }
     }
@@ -164,7 +164,7 @@ pub const App = struct {
         if (app_state) |state| {
             const self: *App = @alignCast(@ptrCast(state));
             self.processSystems(.Deinit) catch |err| {
-                pine.log.err("failed to process systems with tag '{s}': {}", .{ Schedule.Deinit.toString(), err });
+                log.err("failed to process systems with tag '{s}': {}", .{ Schedule.Deinit.toString(), err });
             };
         }
     }
