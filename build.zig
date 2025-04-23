@@ -15,11 +15,15 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const dep_pecs = b.dependency("pecs", .{
+    const pecs_dep = b.dependency("pecs", .{
         .target = target,
         .optimize = optimize,
     });
-    const dep_sokol = b.dependency("sokol", .{
+    const sokol_dep = b.dependency("sokol", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zm_dep = b.dependency("zm", .{
         .target = target,
         .optimize = optimize,
     });
@@ -37,8 +41,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    lib_mod.addImport("pecs", dep_pecs.module("pecs"));
-    lib_mod.addImport("sokol", dep_sokol.module("sokol"));
+    lib_mod.addImport("pecs", pecs_dep.module("pecs"));
+    lib_mod.addImport("sokol", sokol_dep.module("sokol"));
+    lib_mod.addImport("zm", zm_dep.module("zm"));
 
     // We will also create a module for our other entry point, 'main.zig'.
     const exe_mod = b.createModule(.{
@@ -55,8 +60,9 @@ pub fn build(b: *std.Build) void {
     // This is what allows Zig source code to use `@import("foo")` where 'foo' is not a
     // file path. In this case, we set up `exe_mod` to import `lib_mod`.
     exe_mod.addImport("pine", lib_mod);
-    exe_mod.addImport("pecs", dep_pecs.module("pecs"));
-    exe_mod.addImport("sokol", dep_sokol.module("sokol"));
+    exe_mod.addImport("pecs", pecs_dep.module("pecs"));
+    exe_mod.addImport("sokol", sokol_dep.module("sokol"));
+    exe_mod.addImport("zm", zm_dep.module("zm"));
 
     // Now, we will create a static library based on the module we created above.
     // This creates a `std.Build.Step.Compile`, which is the build step responsible

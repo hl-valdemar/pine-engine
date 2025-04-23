@@ -6,9 +6,16 @@ const sokol = @import("sokol");
 
 const pine = @import("root.zig");
 
-pub const EventType = [*c]const sokol.app.Event;
+/// For communication outward.
+pub const Event = sokol.app.Event;
 
-pub const AppDesc = struct {
+/// For communication inward.
+pub const Message = enum {
+    RequestQuit,
+};
+
+/// Config with sensible defaults for the app.
+pub const AppConfig = struct {
     const default_size = 200;
 
     // default 4/3 aspect ratio, as God intended it
@@ -21,38 +28,61 @@ pub const AppDesc = struct {
     title: [*c]const u8 = "Pine Engine",
 };
 
+/// Schedule systems.
 pub const Schedule = enum {
+    /// Run once on app initialization.
     Init,
+
+    /// Run once on app deinitialization.
     Deinit,
+
+    /// Run every frame (before PostUpdate).
     Update,
+
+    /// Run every frame (after Update).
+    PostUpdate,
+
+    /// Run every frame (after Update and PostUpdate).
+    Render,
+
+    /// Return a string representation of the schedule value.
+    pub fn toString(self: Schedule) []const u8 {
+        return @tagName(self);
+    }
 };
 
-pub const AppState = struct {
+pub const App = struct {
     allocator: Allocator,
-    desc: AppDesc,
+    desc: AppConfig,
     registry: pecs.Registry,
 
-    pub fn init(allocator: Allocator, desc: AppDesc) !AppState {
-        var state = AppState{
+    pub fn init(allocator: Allocator, desc: AppConfig) !App {
+        var app = App{
             .allocator = allocator,
             .desc = desc,
             .registry = try pecs.Registry.init(allocator, .{ .remove_empty_archetypes = true }),
         };
 
-        try state.registry.registerResource(EventType);
+        try app.registerResource(Event);
+        try app.registerResource(Message);
 
-        try state.registry.registerTaggedSystem(SetupSystem, "init");
-        try state.registry.registerTaggedSystem(CleanupSystem, "deinit");
-        try state.registry.registerTaggedSystem(RenderSystem, "update");
+        try app.registerSystem(SetupSystem, .Init);
 
-        return state;
+        try app.registerSystem(CleanupSystem, .Deinit);
+
+        try app.registerSystem(MessageHandlerSystem, .PostUpdate);
+
+        try app.registerSystem(RenderSystem, .Render);
+
+        return app;
     }
 
-    pub fn deinit(self: *AppState) void {
+    pub fn deinit(self: *App) void {
         self.registry.deinit();
     }
 
-    pub fn run(self: *AppState) void {
+    /// Run the app.
+    pub fn run(self: *App) void {
         sokol.app.run(.{
             .init_userdata_cb = sokolInit,
             .frame_userdata_cb = sokolFrame,
@@ -68,46 +98,63 @@ pub const AppState = struct {
         });
     }
 
-    pub fn registerSystem(self: *AppState, comptime SystemType: type, schedule: Schedule) !void {
-        const tag = switch (schedule) {
-            Schedule.Init => "init",
-            Schedule.Deinit => "deinit",
-            Schedule.Update => "update",
-        };
-        try self.registry.registerTaggedSystem(SystemType, tag);
+    /// Register a system in the app.
+    pub fn registerSystem(self: *App, comptime SystemType: type, schedule: Schedule) !void {
+        try self.registry.registerTaggedSystem(SystemType, schedule.toString());
     }
 
-    export fn sokolInit(app_state: ?*anyopaque) void {
-        if (app_state) |state| {
-            const self: *AppState = @alignCast(@ptrCast(state));
-            self.registry.processSystemsTagged("init") catch |err| {
-                pine.log.err("failed to process systems with tag 'init': {}", .{err});
+    /// Register a resource in the app.
+    pub fn registerResource(self: *App, comptime ResourceType: type) !void {
+        try self.registry.registerResource(ResourceType);
+    }
+
+    fn processSystems(self: *App, schedule: Schedule) !void {
+        try self.registry.processSystemsTagged(schedule.toString());
+    }
+
+    export fn sokolInit(app: ?*anyopaque) void {
+        if (app) |a| {
+            const self: *App = @alignCast(@ptrCast(a));
+            self.processSystems(.Init) catch |err| {
+                pine.log.err("failed to process systems with tag '{s}': {}", .{ Schedule.Init.toString(), err });
             };
         }
     }
 
-    export fn sokolFrame(app_state: ?*anyopaque) void {
-        if (app_state) |state| {
-            const self: *AppState = @alignCast(@ptrCast(state));
+    export fn sokolFrame(app: ?*anyopaque) void {
+        if (app) |a| {
+            const self: *App = @alignCast(@ptrCast(a));
 
-            self.registry.processSystemsTagged("update") catch |err| {
-                pine.log.err("failed to process systems with tag 'update': {}", .{err});
+            const system_process_err_fmt = "failed to process systems with tag '{s}': {}";
+            const resource_clear_err_fmt = "failed to clear '{s}' resource: {}";
+
+            // note: system messages may be added here
+            self.processSystems(.Update) catch |err| {
+                pine.log.err(system_process_err_fmt, .{ Schedule.Update.toString(), err });
             };
 
-            // clear all events
-            // note: events not acted upon will be lost
-            self.registry.clearResource(EventType) catch |err| {
-                pine.log.err("failed to clear event resource: {}", .{err});
+            self.processSystems(.PostUpdate) catch |err| {
+                pine.log.err(system_process_err_fmt, .{ Schedule.PostUpdate.toString(), err });
+            };
+
+            // clear all events including those not acted upon
+            self.registry.clearResource(Event) catch |err| {
+                pine.log.err(resource_clear_err_fmt, .{ @typeName(Event), err });
+            };
+
+            // clear messages from previous iteration
+            self.registry.clearResource(Message) catch |err| {
+                pine.log.err(resource_clear_err_fmt, .{ @typeName(Message), err });
             };
         }
     }
 
-    export fn sokolEvent(ev: EventType, app_state: ?*anyopaque) void {
+    export fn sokolEvent(event: [*c]const Event, app_state: ?*anyopaque) void {
         if (app_state) |state| {
-            const self: *AppState = @alignCast(@ptrCast(state));
+            const self: *App = @alignCast(@ptrCast(state));
 
             // push the event to the relevant resource buffer
-            self.registry.pushResource(ev) catch |err| {
+            self.registry.pushResource(event.*) catch |err| {
                 pine.log.err("failed to push event resource: {}", .{err});
             };
         }
@@ -115,9 +162,9 @@ pub const AppState = struct {
 
     export fn sokolCleanup(app_state: ?*anyopaque) void {
         if (app_state) |state| {
-            const self: *AppState = @alignCast(@ptrCast(state));
-            self.registry.processSystemsTagged("deinit") catch |err| {
-                pine.log.err("failed to process systems with tag 'deinit': {}", .{err});
+            const self: *App = @alignCast(@ptrCast(state));
+            self.processSystems(.Deinit) catch |err| {
+                pine.log.err("failed to process systems with tag '{s}': {}", .{ Schedule.Deinit.toString(), err });
             };
         }
     }
@@ -150,6 +197,23 @@ const CleanupSystem = struct {
     }
 };
 
+const MessageHandlerSystem = struct {
+    pub fn init(_: Allocator) anyerror!MessageHandlerSystem {
+        return MessageHandlerSystem{};
+    }
+
+    pub fn deinit(_: *MessageHandlerSystem) void {}
+
+    pub fn process(_: *MessageHandlerSystem, registry: *pecs.Registry) anyerror!void {
+        var result = try registry.queryResource(Message);
+        while (result.next()) |message| {
+            if (message.* == .RequestQuit) {
+                sokol.app.requestQuit();
+            }
+        }
+    }
+};
+
 const RenderSystem = struct {
     pub fn init(_: Allocator) anyerror!RenderSystem {
         return RenderSystem{};
@@ -159,14 +223,16 @@ const RenderSystem = struct {
 
     pub fn process(_: *RenderSystem, _: *pecs.Registry) anyerror!void {
         var pass = sokol.gfx.Pass{};
+
         pass.action.colors[0] = sokol.gfx.ColorAttachmentAction{
             .load_action = .CLEAR,
-            // .store_action = .DONTCARE,
             .clear_value = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
         };
         pass.swapchain = sokol.glue.swapchain();
+
         sokol.gfx.beginPass(pass);
         sokol.gfx.endPass();
+
         sokol.gfx.commit();
     }
 };

@@ -14,7 +14,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    var app = try pine.app.AppState.init(allocator, .{});
+    var app = try pine.app.App.init(allocator, .{});
     defer app.deinit();
 
     try app.registerSystem(EventHandlerSystem, .Update);
@@ -30,11 +30,10 @@ const EventHandlerSystem = struct {
     pub fn deinit(_: *EventHandlerSystem) void {}
 
     pub fn process(_: *EventHandlerSystem, registry: *pecs.Registry) anyerror!void {
-        var result = try registry.queryResource(pine.app.EventType);
-        while (result.next()) |event_ptr| {
-            const event = event_ptr.*.*;
+        var result = try registry.queryResource(pine.app.Event);
+        while (result.next()) |event| {
             if (event.key_code == .ESCAPE and event.type == .KEY_UP) {
-                sokol.app.requestQuit();
+                try registry.pushResource(pine.app.Message.RequestQuit);
             }
             if (event.key_code == .ENTER and event.type == .KEY_UP) {
                 std.log.info("ENTER!", .{});
