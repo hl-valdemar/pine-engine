@@ -43,6 +43,7 @@ pub const AppState = struct {
 
         try state.registry.registerTaggedSystem(SetupSystem, "init");
         try state.registry.registerTaggedSystem(CleanupSystem, "deinit");
+        try state.registry.registerTaggedSystem(RenderSystem, "update");
 
         return state;
     }
@@ -79,15 +80,22 @@ pub const AppState = struct {
     export fn sokolInit(app_state: ?*anyopaque) void {
         if (app_state) |state| {
             const self: *AppState = @alignCast(@ptrCast(state));
-            self.registry.updateSystemsTagged("init");
+            self.registry.processSystemsTagged("init") catch |err| {
+                pine.log.err("failed to process systems with tag 'init': {}", .{err});
+            };
         }
     }
 
     export fn sokolFrame(app_state: ?*anyopaque) void {
         if (app_state) |state| {
             const self: *AppState = @alignCast(@ptrCast(state));
-            self.registry.updateSystemsTagged("update");
 
+            self.registry.processSystemsTagged("update") catch |err| {
+                pine.log.err("failed to process systems with tag 'update': {}", .{err});
+            };
+
+            // clear all events
+            // note: events not acted upon will be lost
             self.registry.clearResource(EventType) catch |err| {
                 pine.log.err("failed to clear event resource: {}", .{err});
             };
@@ -98,6 +106,7 @@ pub const AppState = struct {
         if (app_state) |state| {
             const self: *AppState = @alignCast(@ptrCast(state));
 
+            // push the event to the relevant resource buffer
             self.registry.pushResource(ev) catch |err| {
                 pine.log.err("failed to push event resource: {}", .{err});
             };
@@ -107,28 +116,21 @@ pub const AppState = struct {
     export fn sokolCleanup(app_state: ?*anyopaque) void {
         if (app_state) |state| {
             const self: *AppState = @alignCast(@ptrCast(state));
-            self.registry.updateSystemsTagged("deinit");
+            self.registry.processSystemsTagged("deinit") catch |err| {
+                pine.log.err("failed to process systems with tag 'deinit': {}", .{err});
+            };
         }
     }
 };
 
 const SetupSystem = struct {
-    allocator: Allocator,
-
-    pub fn init(allocator: Allocator) anyerror!SetupSystem {
-        return SetupSystem{
-            .allocator = allocator,
-        };
+    pub fn init(_: Allocator) anyerror!SetupSystem {
+        return SetupSystem{};
     }
 
-    pub fn deinit(self: *SetupSystem) void {
-        _ = self;
-    }
+    pub fn deinit(_: *SetupSystem) void {}
 
-    pub fn update(self: *SetupSystem, registry: *pecs.Registry) anyerror!void {
-        _ = self;
-        _ = registry;
-
+    pub fn process(_: *SetupSystem, _: *pecs.Registry) anyerror!void {
         sokol.gfx.setup(.{
             .environment = sokol.glue.environment(),
             .logger = .{ .func = sokol.log.func },
@@ -137,22 +139,34 @@ const SetupSystem = struct {
 };
 
 const CleanupSystem = struct {
-    allocator: Allocator,
-
-    pub fn init(allocator: Allocator) anyerror!CleanupSystem {
-        return CleanupSystem{
-            .allocator = allocator,
-        };
+    pub fn init(_: Allocator) anyerror!CleanupSystem {
+        return CleanupSystem{};
     }
 
-    pub fn deinit(self: *CleanupSystem) void {
-        _ = self;
-    }
+    pub fn deinit(_: *CleanupSystem) void {}
 
-    pub fn update(self: *CleanupSystem, registry: *pecs.Registry) anyerror!void {
-        _ = self;
-        _ = registry;
-
+    pub fn process(_: *CleanupSystem, _: *pecs.Registry) anyerror!void {
         sokol.gfx.shutdown();
+    }
+};
+
+const RenderSystem = struct {
+    pub fn init(_: Allocator) anyerror!RenderSystem {
+        return RenderSystem{};
+    }
+
+    pub fn deinit(_: *RenderSystem) void {}
+
+    pub fn process(_: *RenderSystem, _: *pecs.Registry) anyerror!void {
+        var pass = sokol.gfx.Pass{};
+        pass.action.colors[0] = sokol.gfx.ColorAttachmentAction{
+            .load_action = .CLEAR,
+            // .store_action = .DONTCARE,
+            .clear_value = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
+        };
+        pass.swapchain = sokol.glue.swapchain();
+        sokol.gfx.beginPass(pass);
+        sokol.gfx.endPass();
+        sokol.gfx.commit();
     }
 };

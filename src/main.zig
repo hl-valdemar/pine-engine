@@ -23,21 +23,13 @@ pub fn main() !void {
 }
 
 const EventHandlerSystem = struct {
-    allocator: Allocator,
-
-    pub fn init(allocator: Allocator) anyerror!EventHandlerSystem {
-        return EventHandlerSystem{
-            .allocator = allocator,
-        };
+    pub fn init(_: Allocator) anyerror!EventHandlerSystem {
+        return EventHandlerSystem{};
     }
 
-    pub fn deinit(self: *EventHandlerSystem) void {
-        _ = self;
-    }
+    pub fn deinit(_: *EventHandlerSystem) void {}
 
-    pub fn update(self: *EventHandlerSystem, registry: *pecs.Registry) anyerror!void {
-        _ = self;
-
+    pub fn process(_: *EventHandlerSystem, registry: *pecs.Registry) anyerror!void {
         var result = try registry.queryResource(pine.app.EventType);
         while (result.next()) |event_ptr| {
             const event = event_ptr.*.*;
