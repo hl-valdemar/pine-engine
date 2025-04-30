@@ -67,11 +67,8 @@ pub const App = struct {
         try app.registerResource(Message);
 
         try app.registerSystem(SetupSystem, .Init);
-
         try app.registerSystem(CleanupSystem, .Deinit);
-
         try app.registerSystem(MessageHandlerSystem, .PostUpdate);
-
         try app.registerSystem(RenderSystem, .Render);
 
         return app;
@@ -137,12 +134,16 @@ pub const App = struct {
                 log.err(system_process_err_fmt, .{ Schedule.PostUpdate.toString(), err });
             };
 
+            self.processSystems(.Render) catch |err| {
+                log.err(system_process_err_fmt, .{ Schedule.Render.toString(), err });
+            };
+
             // clear all events including those not acted upon
             self.registry.clearResource(Event) catch |err| {
                 log.err(resource_clear_err_fmt, .{ @typeName(Event), err });
             };
 
-            // clear messages from previous iteration
+            // clear messages from previous iteration including those not acted upon
             self.registry.clearResource(Message) catch |err| {
                 log.err(resource_clear_err_fmt, .{ @typeName(Message), err });
             };
