@@ -2,8 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const pine = @import("pine");
-const pecs = @import("pecs");
-const sokol = @import("sokol");
+// const pecs = pine.ecs;
 
 pub const std_options = std.Options{
     .logFn = pine.log.logFn,
@@ -29,7 +28,7 @@ const EventHandlerSystem = struct {
 
     pub fn deinit(_: *EventHandlerSystem) void {}
 
-    pub fn process(_: *EventHandlerSystem, registry: *pecs.Registry) anyerror!void {
+    pub fn process(_: *EventHandlerSystem, registry: *pine.ecs.Registry) anyerror!void {
         var result = try registry.queryResource(pine.app.Event);
         while (result.next()) |event| {
             if (event.key_code == .ESCAPE and event.type == .KEY_UP) {

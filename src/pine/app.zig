@@ -164,6 +164,8 @@ pub const App = struct {
     export fn sokolCleanup(app_state: ?*anyopaque) void {
         if (app_state) |state| {
             const self: *App = @alignCast(@ptrCast(state));
+
+            // process cleanup systems
             self.processSystems(.Deinit) catch |err| {
                 log.err("failed to process systems with tag '{s}': {}", .{ Schedule.Deinit.toString(), err });
             };
