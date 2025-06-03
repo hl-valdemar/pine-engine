@@ -227,9 +227,18 @@ const RenderSystem = struct {
     pub fn process(_: *RenderSystem, _: *pecs.Registry) anyerror!void {
         var pass = sokol.gfx.Pass{};
 
+        const rad: f32 = @floatFromInt(sokol.app.frameCount());
+        const amp = 0.95;
+        const freq = 0.0125;
+        const offset = 2.0 * std.math.pi / 3.0;
+
+        const r: f32 = amp * @sin(freq * rad + 0.0 * offset);
+        const g: f32 = amp * @sin(freq * rad + 0.0 * offset);
+        const b: f32 = amp * @sin(freq * rad + 0.0 * offset);
+
         pass.action.colors[0] = sokol.gfx.ColorAttachmentAction{
             .load_action = .CLEAR,
-            .clear_value = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
+            .clear_value = .{ .r = r, .g = g, .b = b, .a = 1 },
         };
         pass.swapchain = sokol.glue.swapchain();
 
