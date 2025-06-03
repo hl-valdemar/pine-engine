@@ -22,10 +22,14 @@ pub const AppConfig = struct {
     const default_aspect_width = 4;
     const default_aspect_height = 3;
 
+    // window related
     width: i32 = default_aspect_width * default_size,
     height: i32 = default_aspect_height * default_size,
     sample_count: i32 = 2,
     title: [*c]const u8 = "Pine Engine",
+
+    // ECS related
+    remove_empty_archetypes: bool = true,
 };
 
 /// Schedule systems.
@@ -56,11 +60,13 @@ pub const App = struct {
     desc: AppConfig,
     registry: pecs.Registry,
 
-    pub fn init(allocator: Allocator, desc: AppConfig) !App {
+    pub fn init(allocator: Allocator, config: AppConfig) !App {
         var app = App{
             .allocator = allocator,
-            .desc = desc,
-            .registry = try pecs.Registry.init(allocator, .{ .remove_empty_archetypes = true }),
+            .desc = config,
+            .registry = try pecs.Registry.init(allocator, .{
+                .remove_empty_archetypes = config.remove_empty_archetypes,
+            }),
         };
 
         try app.registerResource(Event);
