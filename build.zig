@@ -73,6 +73,20 @@ pub fn build(b: *std.Build) void {
         .root_module = lib_mod,
     });
 
+    // Add src/lib for libraries.
+    lib.addIncludePath(.{
+        .src_path = .{ 
+            .owner = b,
+            .sub_path = "src/lib",
+        },
+    });
+
+    // Link the macOS frameworks
+    lib.linkFramework("CoreVideo");
+    lib.linkFramework("Cocoa");
+    lib.linkFramework("OpenGL");
+    lib.linkFramework("IOKit");
+
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).

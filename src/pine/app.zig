@@ -1,3 +1,5 @@
+const rgfw = @cImport(@cInclude("RGFW.h"));
+
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
@@ -99,6 +101,19 @@ pub const App = struct {
             .height = self.desc.height,
             .window_title = self.desc.title,
         });
+    }
+
+    /// Spawn an entity with initial components.
+    ///
+    /// An example might look as follows:
+    /// ```zig
+    /// const entity = try app.spawn(.{
+    ///     Player{},
+    ///     Health{ .current = 3, .max = 5 },
+    /// });
+    /// ```
+    pub fn spawn(self: *App, components: anytype) !pecs.EntityID {
+        return try self.registry.spawn(components);
     }
 
     /// Register a system in the app.
