@@ -27,6 +27,10 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const zglfw_dep = b.dependency("zglfw", .{
+        .target = target,
+        .optimize = optimize,
+    });
 
     // This creates a "module", which represents a collection of source files alongside
     // some compilation options, such as optimization mode and linked system libraries.
@@ -44,6 +48,7 @@ pub fn build(b: *std.Build) void {
     lib_mod.addImport("pecs", pecs_dep.module("pecs"));
     lib_mod.addImport("sokol", sokol_dep.module("sokol"));
     lib_mod.addImport("zm", zm_dep.module("zm"));
+    lib_mod.addImport("glfw", zglfw_dep.module("glfw"));
 
     // We will also create a module for our other entry point, 'main.zig'.
     const exe_mod = b.createModule(.{
@@ -63,6 +68,7 @@ pub fn build(b: *std.Build) void {
     exe_mod.addImport("pecs", pecs_dep.module("pecs"));
     exe_mod.addImport("sokol", sokol_dep.module("sokol"));
     exe_mod.addImport("zm", zm_dep.module("zm"));
+    exe_mod.addImport("glfw", zglfw_dep.module("glfw"));
 
     // Now, we will create a static library based on the module we created above.
     // This creates a `std.Build.Step.Compile`, which is the build step responsible
@@ -81,12 +87,6 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    // Link the macOS frameworks
-    lib.linkFramework("CoreVideo");
-    lib.linkFramework("Cocoa");
-    lib.linkFramework("OpenGL");
-    lib.linkFramework("IOKit");
-
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
@@ -97,6 +97,14 @@ pub fn build(b: *std.Build) void {
     const exe = b.addExecutable(.{
         .name = "pine_engine",
         .root_module = exe_mod,
+    });
+
+    // Add src/lib for libraries.
+    exe.addIncludePath(.{
+        .src_path = .{ 
+            .owner = b,
+            .sub_path = "src/lib",
+        },
     });
 
     // This declares intent for the executable to be installed into the

@@ -41,12 +41,16 @@
             .hash = "sokol-0.1.0-pb1HK0yHLAAp0QKI76BDMpoCCRA-QkhgU4-1Ir1i0A5b",
         },
         .pecs = .{
-            .url = "git+https://github.com/hl-valdemar/pine-ecs#10e34a3fa226be7dd39474063265318a2b6054e3",
-            .hash = "pine_ecs-0.1.1-4KYRKJ3fAABRuL9v_fWR80_6Wq2nYNpFcoqAiYJrBlji",
+            .url = "git+https://github.com/hl-valdemar/pine-ecs#13ea4794ed3ec27c1a9e8a67e4117642239c9b25",
+            .hash = "pine_ecs-0.1.1-4KYRKP3mAAC2cqgLTr5_jqfTSUUPyNU_DQykXtjmU74A",
         },
         .zm = .{
             .url = "git+https://github.com/griush/zm#d3b2d90f9a1818f167abca40b7b708f9e9765638",
             .hash = "zm-0.3.0-cLX-WbfMAAAlqyfozvJsnhWlHO1MdlkVajyEDi6OISgO",
+        },
+        .zglfw = .{
+            .url = "git+https://github.com/IridescenceTech/zglfw#5d25d66b3d4912c9cb66e4db9dfb80a6eecc84ad",
+            .hash = "zglfw-0.1.0-BghZXfnRAACSrPga22je1XilEj1QNXrtv6w4HIUFqdks",
         },
     },
     .paths = .{

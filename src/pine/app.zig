@@ -1,37 +1,18 @@
-const rgfw = @cImport(@cInclude("RGFW.h"));
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const pecs = @import("pecs");
-const sokol = @import("sokol");
+const glfw = @import("glfw");
 
 const log = @import("log.zig");
 
 /// For communication outward.
-pub const Event = sokol.app.Event;
+pub const Event = enum {};
 
 /// For communication inward.
 pub const Message = enum {
+    /// Special as this value is checked explicitly in the update loop.
     RequestQuit,
-};
-
-/// Config with sensible defaults for the app.
-pub const AppConfig = struct {
-    const default_size = 200;
-
-    // default 4/3 aspect ratio, as God intended it
-    const default_aspect_width = 4;
-    const default_aspect_height = 3;
-
-    // window related
-    width: i32 = default_aspect_width * default_size,
-    height: i32 = default_aspect_height * default_size,
-    sample_count: i32 = 2,
-    title: [*c]const u8 = "Pine Engine",
-
-    // ECS related
-    remove_empty_archetypes: bool = true,
 };
 
 /// Schedule systems.
@@ -57,15 +38,21 @@ pub const Schedule = enum {
     }
 };
 
+/// Config with sensible defaults for the app.
+pub const AppConfig = struct {
+    // ECS related
+    remove_empty_archetypes: bool = true,
+};
+
 pub const App = struct {
     allocator: Allocator,
-    desc: AppConfig,
+    config: AppConfig,
     registry: pecs.Registry,
 
     pub fn init(allocator: Allocator, config: AppConfig) !App {
         var app = App{
             .allocator = allocator,
-            .desc = config,
+            .config = config,
             .registry = try pecs.Registry.init(allocator, .{
                 .remove_empty_archetypes = config.remove_empty_archetypes,
             }),
@@ -74,10 +61,9 @@ pub const App = struct {
         try app.registerResource(Event);
         try app.registerResource(Message);
 
-        try app.registerSystem(SetupSystem, .Init);
-        try app.registerSystem(CleanupSystem, .Deinit);
+        // try app.addPlugin(SetupPlugin);
+
         try app.registerSystem(MessageHandlerSystem, .PostUpdate);
-        try app.registerSystem(RenderSystem, .Render);
 
         return app;
     }
@@ -87,20 +73,51 @@ pub const App = struct {
     }
 
     /// Run the app.
-    pub fn run(self: *App) void {
-        sokol.app.run(.{
-            .init_userdata_cb = sokolInit,
-            .frame_userdata_cb = sokolFrame,
-            .event_userdata_cb = sokolEvent,
-            .cleanup_userdata_cb = sokolCleanup,
-            .user_data = self,
-            .logger = .{ .func = sokol.log.func },
-            .icon = .{ .sokol_default = true },
-            .sample_count = self.desc.sample_count,
-            .width = self.desc.width,
-            .height = self.desc.height,
-            .window_title = self.desc.title,
-        });
+    pub fn run(self:*App) void {
+        const system_process_err_fmt = "failed to process systems with tag '{s}': {}";
+
+        // first initialize the app
+        self.processSystems(.Init) catch |err| {
+            log.warn(system_process_err_fmt, .{ Schedule.Init.toString(), err });
+        };
+
+        // run an update loop if any update systems are registered
+        if (self.registry.system_manager.tagged_systems.get(Schedule.Update.toString())) |_| {
+            const resource_clear_err_fmt = "failed to clear '{s}' resource: {}";
+
+            var result = self.registry.queryResource(Message) catch unreachable; // Message should always be registered!
+            var message = result.next();
+
+            while (message == null or message.?.* != Message.RequestQuit) {
+                // note: system messages may be added here
+                self.processSystems(.Update) catch |err| {
+                    log.err(system_process_err_fmt, .{ Schedule.Update.toString(), err });
+                };
+
+                self.processSystems(.PostUpdate) catch |err| {
+                    log.err(system_process_err_fmt, .{ Schedule.PostUpdate.toString(), err });
+                };
+
+                // store this value before clearing!
+                result = self.registry.queryResource(Message) catch unreachable; // Message should always be registered!
+                message = result.next();
+
+                // clear all events including those not acted upon
+                self.registry.clearResource(Event) catch |err| {
+                    log.err(resource_clear_err_fmt, .{ @typeName(Event), err });
+                };
+
+                // clear messages from previous iteration including those not acted upon
+                self.registry.clearResource(Message) catch |err| {
+                    log.err(resource_clear_err_fmt, .{ @typeName(Message), err });
+                };
+            }
+        }
+
+        // when done, clean up
+        self.processSystems(.Deinit) catch |err| {
+            log.err(system_process_err_fmt, .{Schedule.Deinit.toString(), err});
+        };
     }
 
     /// Spawn an entity with initial components.
@@ -126,100 +143,132 @@ pub const App = struct {
         try self.registry.registerResource(ResourceType);
     }
 
+    /// Add a plugin bundling behavior.
+    ///
+    /// Plugins can be used to bundle behavior and might look as follows:
+    ///
+    /// ```zig
+    /// pub const HealthPlugin = Plugin.init("Health", struct {
+    ///     const Health = struct { current: f32, max: f32 };
+    ///     const Damage = struct { amount: f32 };
+    ///
+    ///     fn init(registry: *Registry) !void {
+    ///         try registry.registerTaggedSystem(HealthSystem, "health");
+    ///         try registry.registerTaggedSystem(DamageSystem, "health");
+    ///     }
+    ///
+    ///     // ... system implementations ...
+    /// }.init);
+    ///
+    /// app.addPlugin(HealthPlugin);
+    /// ```
+    pub fn addPlugin(self: *App, plugin: pecs.Plugin) !void {
+        try self.registry.addPlugin(plugin);
+    }
+
     fn processSystems(self: *App, schedule: Schedule) !void {
         try self.registry.processSystemsTagged(schedule.toString());
     }
-
-    export fn sokolInit(app: ?*anyopaque) void {
-        if (app) |a| {
-            const self: *App = @alignCast(@ptrCast(a));
-            self.processSystems(.Init) catch |err| {
-                log.err("failed to process systems with tag '{s}': {}", .{ Schedule.Init.toString(), err });
-            };
-        }
-    }
-
-    export fn sokolFrame(app: ?*anyopaque) void {
-        if (app) |a| {
-            const self: *App = @alignCast(@ptrCast(a));
-
-            const system_process_err_fmt = "failed to process systems with tag '{s}': {}";
-            const resource_clear_err_fmt = "failed to clear '{s}' resource: {}";
-
-            // note: system messages may be added here
-            self.processSystems(.Update) catch |err| {
-                log.err(system_process_err_fmt, .{ Schedule.Update.toString(), err });
-            };
-
-            self.processSystems(.PostUpdate) catch |err| {
-                log.err(system_process_err_fmt, .{ Schedule.PostUpdate.toString(), err });
-            };
-
-            self.processSystems(.Render) catch |err| {
-                log.err(system_process_err_fmt, .{ Schedule.Render.toString(), err });
-            };
-
-            // clear all events including those not acted upon
-            self.registry.clearResource(Event) catch |err| {
-                log.err(resource_clear_err_fmt, .{ @typeName(Event), err });
-            };
-
-            // clear messages from previous iteration including those not acted upon
-            self.registry.clearResource(Message) catch |err| {
-                log.err(resource_clear_err_fmt, .{ @typeName(Message), err });
-            };
-        }
-    }
-
-    export fn sokolEvent(event: [*c]const Event, app_state: ?*anyopaque) void {
-        if (app_state) |state| {
-            const self: *App = @alignCast(@ptrCast(state));
-
-            // push the event to the relevant resource buffer
-            self.registry.pushResource(event.*) catch |err| {
-                log.err("failed to push event resource: {}", .{err});
-            };
-        }
-    }
-
-    export fn sokolCleanup(app_state: ?*anyopaque) void {
-        if (app_state) |state| {
-            const self: *App = @alignCast(@ptrCast(state));
-
-            // process cleanup systems
-            self.processSystems(.Deinit) catch |err| {
-                log.err("failed to process systems with tag '{s}': {}", .{ Schedule.Deinit.toString(), err });
-            };
-        }
-    }
 };
 
-const SetupSystem = struct {
-    pub fn init(_: Allocator) anyerror!SetupSystem {
-        return SetupSystem{};
+// pub const SetupPlugin = pecs.Plugin.init("wetup", struct {
+//     // declare components here...
+//
+//     fn init(registry: *pecs.Registry) !void {
+//         try registry.registerTaggedSystem(SetupCore, Schedule.Init.toString());
+//     }
+//
+//     const SetupCore = struct {
+//         pub fn init(_: std.mem.Allocator) anyerror!SetupCore {
+//             return SetupCore{};
+//         }
+//
+//         pub fn deinit(_: *SetupCore) void {}
+//
+//         pub fn process(_: *SetupCore, registry: *pecs.Registry) anyerror!void {
+//             _ = registry;
+//         }
+//     };
+// }.init);
+
+pub const WindowPlugin = pecs.Plugin.init("window", struct {
+    var window: *glfw.Window = undefined;
+
+    fn init(registry: *pecs.Registry) !void {
+        try registry.registerTaggedSystem(SetupGLFW, Schedule.Init.toString());
+        try registry.registerTaggedSystem(CleanupGLFW, Schedule.Deinit.toString());
+        try registry.registerTaggedSystem(CreateWindow, Schedule.Init.toString());
+        try registry.registerTaggedSystem(PollEvents, Schedule.Update.toString());
     }
 
-    pub fn deinit(_: *SetupSystem) void {}
+    const SetupGLFW = struct {
+        pub fn init(_: std.mem.Allocator) anyerror!SetupGLFW {
+            return SetupGLFW{};
+        }
 
-    pub fn process(_: *SetupSystem, _: *pecs.Registry) anyerror!void {
-        sokol.gfx.setup(.{
-            .environment = sokol.glue.environment(),
-            .logger = .{ .func = sokol.log.func },
-        });
-    }
-};
+        pub fn deinit(_: *SetupGLFW) void {}
 
-const CleanupSystem = struct {
-    pub fn init(_: Allocator) anyerror!CleanupSystem {
-        return CleanupSystem{};
-    }
+        pub fn process(_: *SetupGLFW, registry: *pecs.Registry) anyerror!void {
+            _ = registry;
 
-    pub fn deinit(_: *CleanupSystem) void {}
+            var major: i32 = 0;
+            var minor: i32 = 0;
+            var rev: i32 = 0;
 
-    pub fn process(_: *CleanupSystem, _: *pecs.Registry) anyerror!void {
-        sokol.gfx.shutdown();
-    }
-};
+            glfw.getVersion(&major, &minor, &rev);
+            log.info("using GLFW v{}.{}.{}", .{ major, minor, rev });
+
+            try glfw.init();
+        }
+    };
+
+    const CleanupGLFW = struct {
+        pub fn init(_: std.mem.Allocator) anyerror!CleanupGLFW {
+            return CleanupGLFW{};
+        }
+
+        pub fn deinit(_: *CleanupGLFW) void {}
+
+        pub fn process(_: *CleanupGLFW, registry: *pecs.Registry) anyerror!void {
+            _ = registry;
+            log.info("destroying window...", .{});
+            glfw.destroyWindow(window);
+
+            log.info("terminating GLFW...", .{});
+            glfw.terminate();
+        }
+    };
+
+    const CreateWindow = struct {
+        pub fn init(_: std.mem.Allocator) anyerror!CreateWindow {
+            return CreateWindow{};
+        }
+
+        pub fn deinit(_: *CreateWindow) void {}
+
+        pub fn process(_: *CreateWindow, registry: *pecs.Registry) anyerror!void {
+            _ = registry;
+            log.info("creating window...", .{});
+            window = try glfw.createWindow(500, 500, "Pine Test", null, null);
+        }
+    };
+
+    const PollEvents = struct {
+        pub fn init(_: std.mem.Allocator) anyerror!PollEvents {
+            return PollEvents{};
+        }
+
+        pub fn deinit(_: *PollEvents) void {}
+
+        pub fn process(_: *PollEvents, registry: *pecs.Registry) anyerror!void {
+            glfw.pollEvents();
+
+            if (glfw.windowShouldClose(window)) {
+                try registry.pushResource(Message.RequestQuit);
+            }
+        }
+    };
+}.init);
 
 const MessageHandlerSystem = struct {
     pub fn init(_: Allocator) anyerror!MessageHandlerSystem {
@@ -232,40 +281,8 @@ const MessageHandlerSystem = struct {
         var result = try registry.queryResource(Message);
         while (result.next()) |message| {
             if (message.* == .RequestQuit) {
-                sokol.app.requestQuit();
+                // ...
             }
         }
-    }
-};
-
-const RenderSystem = struct {
-    pub fn init(_: Allocator) anyerror!RenderSystem {
-        return RenderSystem{};
-    }
-
-    pub fn deinit(_: *RenderSystem) void {}
-
-    pub fn process(_: *RenderSystem, _: *pecs.Registry) anyerror!void {
-        var pass = sokol.gfx.Pass{};
-
-        const rad: f32 = @floatFromInt(sokol.app.frameCount());
-        const amp = 0.95;
-        const freq = 0.0125;
-        const offset = 2.0 * std.math.pi / 3.0;
-
-        const r: f32 = amp * @sin(freq * rad + 0.0 * offset);
-        const g: f32 = amp * @sin(freq * rad + 0.0 * offset);
-        const b: f32 = amp * @sin(freq * rad + 0.0 * offset);
-
-        pass.action.colors[0] = sokol.gfx.ColorAttachmentAction{
-            .load_action = .CLEAR,
-            .clear_value = .{ .r = r, .g = g, .b = b, .a = 1 },
-        };
-        pass.swapchain = sokol.glue.swapchain();
-
-        sokol.gfx.beginPass(pass);
-        sokol.gfx.endPass();
-
-        sokol.gfx.commit();
     }
 };
