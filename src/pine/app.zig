@@ -61,9 +61,7 @@ pub const App = struct {
         try app.registerResource(Event);
         try app.registerResource(Message);
 
-        // try app.addPlugin(SetupPlugin);
-
-        try app.registerSystem(MessageHandlerSystem, .PostUpdate);
+        // try app.registerSystem(MessageHandlerSystem, .PostUpdate);
 
         return app;
     }
@@ -171,26 +169,6 @@ pub const App = struct {
     }
 };
 
-// pub const SetupPlugin = pecs.Plugin.init("wetup", struct {
-//     // declare components here...
-//
-//     fn init(registry: *pecs.Registry) !void {
-//         try registry.registerTaggedSystem(SetupCore, Schedule.Init.toString());
-//     }
-//
-//     const SetupCore = struct {
-//         pub fn init(_: std.mem.Allocator) anyerror!SetupCore {
-//             return SetupCore{};
-//         }
-//
-//         pub fn deinit(_: *SetupCore) void {}
-//
-//         pub fn process(_: *SetupCore, registry: *pecs.Registry) anyerror!void {
-//             _ = registry;
-//         }
-//     };
-// }.init);
-
 pub const WindowPlugin = pecs.Plugin.init("window", struct {
     var window: *glfw.Window = undefined;
 
@@ -270,19 +248,19 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
     };
 }.init);
 
-const MessageHandlerSystem = struct {
-    pub fn init(_: Allocator) anyerror!MessageHandlerSystem {
-        return MessageHandlerSystem{};
-    }
-
-    pub fn deinit(_: *MessageHandlerSystem) void {}
-
-    pub fn process(_: *MessageHandlerSystem, registry: *pecs.Registry) anyerror!void {
-        var result = try registry.queryResource(Message);
-        while (result.next()) |message| {
-            if (message.* == .RequestQuit) {
-                // ...
-            }
-        }
-    }
-};
+// const MessageHandlerSystem = struct {
+//     pub fn init(_: Allocator) anyerror!MessageHandlerSystem {
+//         return MessageHandlerSystem{};
+//     }
+//
+//     pub fn deinit(_: *MessageHandlerSystem) void {}
+//
+//     pub fn process(_: *MessageHandlerSystem, registry: *pecs.Registry) anyerror!void {
+//         var result = try registry.queryResource(Message);
+//         while (result.next()) |message| {
+//             if (message.* == .RequestQuit) {
+//                 // ...
+//             }
+//         }
+//     }
+// };
