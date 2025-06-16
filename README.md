@@ -2,7 +2,7 @@
 
 <p align="center">
     <kbd>
-        <img src="pine-engine-logo.png" alt="pine engine logo" width="200" border="2px solid red"/>
+        <img src="pine-engine-logo.png" alt="pine engine logo" width="200"/>
     </kbd>
 </p>
 
