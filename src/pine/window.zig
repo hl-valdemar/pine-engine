@@ -147,8 +147,7 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
         }
 
         fn handleKeyEvents(self: *PollEventsSystem, window: *const WindowResource, registry: *pecs.Registry) !void {
-            //-- set modifier values --//
-
+            // set modifier values
             var modifiers: Modifier.Type = 0;
             if (glfw.getKey(window.handle, glfw.KeyLeftShift) == glfw.Press) {
                 modifiers = modifiers | Modifier.LEFT_SHIFT;
@@ -157,8 +156,7 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
                 modifiers = modifiers | Modifier.RIGHT_SHIFT;
             }
 
-            //-- push key events --//
-
+            // push key events
             for (std.enums.values(Key)) |key| {
                 const glfw_key = switch (key) {
                     .Escape => glfw.KeyEscape,
