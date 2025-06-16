@@ -1,4 +1,6 @@
-![pine-engine-logo](pine-engine-logo.png)
+<!-- ![pine-engine-logo](pine-engine-logo.png) -->
+
+<img src="pine-engine-logo.png" alt="pine engine logo" width="200"/>
 
 # Pine Engine
 
