@@ -1,7 +1,9 @@
 <!-- ![pine-engine-logo](pine-engine-logo.png) -->
 
 <p align="center">
-    <img src="pine-engine-logo.png" alt="pine engine logo" width="200" border="2px solid red"/>
+    <kbd>
+        <img src="pine-engine-logo.png" alt="pine engine logo" width="200" border="2px solid red"/>
+    </kbd>
 </p>
 
 # Pine Engine
