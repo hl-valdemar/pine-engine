@@ -1,3 +1,5 @@
+![pine-engine-logo](pine-engine-logo.png)
+
 # Pine Engine
 
 In honor of forests of lush pine. 🌿
