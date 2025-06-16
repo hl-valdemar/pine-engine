@@ -1,55 +1,26 @@
+const pecs = @import("pecs");
+const glfw = @import("glfw");
+const log = @import("log.zig");
+
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const pecs = @import("pecs");
-const glfw = @import("glfw");
-
-const log = @import("log.zig");
-
-/// For communication outward.
-pub const Event = enum {};
-
-/// For communication inward.
-pub const Message = enum {
-    /// Special as this value is checked explicitly in the update loop.
-    RequestQuit,
-};
-
-/// Schedule systems.
-pub const Schedule = enum {
-    /// Run once on app initialization.
-    Init,
-
-    /// Run once on app deinitialization.
-    Deinit,
-
-    /// Run every frame (before PostUpdate).
-    Update,
-
-    /// Run every frame (after Update).
-    PostUpdate,
-
-    /// Run every frame (after Update and PostUpdate).
-    Render,
-
-    /// Return a string representation of the schedule value.
-    pub fn toString(self: Schedule) []const u8 {
-        return @tagName(self);
-    }
-};
+const Schedule = @import("schedule.zig").Schedule;
+const Event = @import("event.zig").Event;
+const Message = @import("message.zig").Message;
 
 /// Config with sensible defaults for the app.
-pub const AppConfig = struct {
+pub const AppDesc = struct {
     // ECS related
     remove_empty_archetypes: bool = true,
 };
 
 pub const App = struct {
     allocator: Allocator,
-    config: AppConfig,
+    config: AppDesc,
     registry: pecs.Registry,
 
-    pub fn init(allocator: Allocator, config: AppConfig) !App {
+    pub fn init(allocator: Allocator, config: AppDesc) !App {
         var app = App{
             .allocator = allocator,
             .config = config,
@@ -72,50 +43,62 @@ pub const App = struct {
 
     /// Run the app.
     pub fn run(self:*App) void {
-        const system_process_err_fmt = "failed to process systems with tag '{s}': {}";
+        const system_process_err_fmt = "failed to process systems with tag [{s}]: {}";
 
         // first initialize the app
-        self.processSystems(.Init) catch |err| {
-            log.warn(system_process_err_fmt, .{ Schedule.Init.toString(), err });
-        };
+        if (self.systemRegistered(.Init)) {
+            self.processSystems(.Init) catch |err| {
+                log.warn(system_process_err_fmt, .{ Schedule.Init.toString(), err });
+            };
+        }
 
         // run an update loop if any update systems are registered
-        if (self.registry.system_manager.tagged_systems.get(Schedule.Update.toString())) |_| {
-            const resource_clear_err_fmt = "failed to clear '{s}' resource: {}";
-
+        if (self.systemRegistered(.PreUpdate) or
+        self.systemRegistered(.Update) or
+        self.systemRegistered(.PostUpdate)) {
             var result = self.registry.queryResource(Message) catch unreachable; // Message should always be registered!
             var message = result.next();
 
-            while (message == null or message.?.* != Message.RequestQuit) {
-                // note: system messages may be added here
-                self.processSystems(.Update) catch |err| {
-                    log.err(system_process_err_fmt, .{ Schedule.Update.toString(), err });
-                };
+            while (message == null or message.?.* != Message.Shutdown) {
+                // note: system events may be generated here
+                if (self.systemRegistered(.PreUpdate)) {
+                    self.processSystems(.PreUpdate) catch |err| {
+                        log.err(system_process_err_fmt, .{ Schedule.PreUpdate.toString(), err });
+                    };
+                }
 
-                self.processSystems(.PostUpdate) catch |err| {
-                    log.err(system_process_err_fmt, .{ Schedule.PostUpdate.toString(), err });
-                };
+                // note: user messages may be generated here
+                if (self.systemRegistered(.Update)) {
+                    self.processSystems(.Update) catch |err| {
+                        log.err(system_process_err_fmt, .{ Schedule.Update.toString(), err });
+                    };
+                }
+
+                // note: internal systems get a chance to react to user messages here
+                if (self.systemRegistered(.PostUpdate)) {
+                    self.processSystems(.PostUpdate) catch |err| {
+                        log.err(system_process_err_fmt, .{ Schedule.PostUpdate.toString(), err });
+                    };
+                }
 
                 // store this value before clearing!
                 result = self.registry.queryResource(Message) catch unreachable; // Message should always be registered!
                 message = result.next();
 
                 // clear all events including those not acted upon
-                self.registry.clearResource(Event) catch |err| {
-                    log.err(resource_clear_err_fmt, .{ @typeName(Event), err });
-                };
+                self.registry.clearResource(Event) catch unreachable;
 
                 // clear messages from previous iteration including those not acted upon
-                self.registry.clearResource(Message) catch |err| {
-                    log.err(resource_clear_err_fmt, .{ @typeName(Message), err });
-                };
+                self.registry.clearResource(Message) catch unreachable;
             }
         }
 
         // when done, clean up
-        self.processSystems(.Deinit) catch |err| {
-            log.err(system_process_err_fmt, .{Schedule.Deinit.toString(), err});
-        };
+        if (self.systemRegistered(.Deinit)) {
+            self.processSystems(.Deinit) catch |err| {
+                log.err(system_process_err_fmt, .{Schedule.Deinit.toString(), err});
+            };
+        }
     }
 
     /// Spawn an entity with initial components.
@@ -139,6 +122,11 @@ pub const App = struct {
     /// Register a resource in the app.
     pub fn registerResource(self: *App, comptime ResourceType: type) !void {
         try self.registry.registerResource(ResourceType);
+    }
+
+    /// Check whether a system was registered.
+    pub fn systemRegistered(self: *App, schedule: Schedule) bool {
+        return self.registry.system_manager.tagged_systems.contains(schedule.toString());
     }
 
     /// Add a plugin bundling behavior.
@@ -168,99 +156,3 @@ pub const App = struct {
         try self.registry.processSystemsTagged(schedule.toString());
     }
 };
-
-pub const WindowPlugin = pecs.Plugin.init("window", struct {
-    var window: *glfw.Window = undefined;
-
-    fn init(registry: *pecs.Registry) !void {
-        try registry.registerTaggedSystem(SetupGLFW, Schedule.Init.toString());
-        try registry.registerTaggedSystem(CleanupGLFW, Schedule.Deinit.toString());
-        try registry.registerTaggedSystem(CreateWindow, Schedule.Init.toString());
-        try registry.registerTaggedSystem(PollEvents, Schedule.Update.toString());
-    }
-
-    const SetupGLFW = struct {
-        pub fn init(_: std.mem.Allocator) anyerror!SetupGLFW {
-            return SetupGLFW{};
-        }
-
-        pub fn deinit(_: *SetupGLFW) void {}
-
-        pub fn process(_: *SetupGLFW, registry: *pecs.Registry) anyerror!void {
-            _ = registry;
-
-            var major: i32 = 0;
-            var minor: i32 = 0;
-            var rev: i32 = 0;
-
-            glfw.getVersion(&major, &minor, &rev);
-            log.info("using GLFW v{}.{}.{}", .{ major, minor, rev });
-
-            try glfw.init();
-        }
-    };
-
-    const CleanupGLFW = struct {
-        pub fn init(_: std.mem.Allocator) anyerror!CleanupGLFW {
-            return CleanupGLFW{};
-        }
-
-        pub fn deinit(_: *CleanupGLFW) void {}
-
-        pub fn process(_: *CleanupGLFW, registry: *pecs.Registry) anyerror!void {
-            _ = registry;
-            log.info("destroying window...", .{});
-            glfw.destroyWindow(window);
-
-            log.info("terminating GLFW...", .{});
-            glfw.terminate();
-        }
-    };
-
-    const CreateWindow = struct {
-        pub fn init(_: std.mem.Allocator) anyerror!CreateWindow {
-            return CreateWindow{};
-        }
-
-        pub fn deinit(_: *CreateWindow) void {}
-
-        pub fn process(_: *CreateWindow, registry: *pecs.Registry) anyerror!void {
-            _ = registry;
-            log.info("creating window...", .{});
-            window = try glfw.createWindow(500, 500, "Pine Test", null, null);
-        }
-    };
-
-    const PollEvents = struct {
-        pub fn init(_: std.mem.Allocator) anyerror!PollEvents {
-            return PollEvents{};
-        }
-
-        pub fn deinit(_: *PollEvents) void {}
-
-        pub fn process(_: *PollEvents, registry: *pecs.Registry) anyerror!void {
-            glfw.pollEvents();
-
-            if (glfw.windowShouldClose(window)) {
-                try registry.pushResource(Message.RequestQuit);
-            }
-        }
-    };
-}.init);
-
-// const MessageHandlerSystem = struct {
-//     pub fn init(_: Allocator) anyerror!MessageHandlerSystem {
-//         return MessageHandlerSystem{};
-//     }
-//
-//     pub fn deinit(_: *MessageHandlerSystem) void {}
-//
-//     pub fn process(_: *MessageHandlerSystem, registry: *pecs.Registry) anyerror!void {
-//         var result = try registry.queryResource(Message);
-//         while (result.next()) |message| {
-//             if (message.* == .RequestQuit) {
-//                 // ...
-//             }
-//         }
-//     }
-// };
