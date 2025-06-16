@@ -1,11 +1,3 @@
-<!-- ![pine-engine-logo](pine-engine-logo.png) -->
-
-<p align="right">
-    <kbd>
-        <img src="pine-engine-logo.png" alt="pine engine logo" width="200"/>
-    </kbd>
-</p>
-
 # Pine Engine
 
 In honor of forests of lush pine. 🌿
