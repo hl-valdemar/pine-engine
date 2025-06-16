@@ -140,13 +140,15 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
                     }
                 }
 
-                try self.checkKeyEvents(&window, registry);
+                try self.handleKeyEvents(&window, registry);
 
                 glfw.pollEvents();
             }
         }
 
-        pub fn checkKeyEvents(self: *PollEventsSystem, window: *const WindowResource, registry: *pecs.Registry) !void {
+        fn handleKeyEvents(self: *PollEventsSystem, window: *const WindowResource, registry: *pecs.Registry) !void {
+            //-- set modifier values --//
+
             var modifiers: Modifier.Type = 0;
             if (glfw.getKey(window.handle, glfw.KeyLeftShift) == glfw.Press) {
                 modifiers = modifiers | Modifier.LEFT_SHIFT;
@@ -155,86 +157,51 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
                 modifiers = modifiers | Modifier.RIGHT_SHIFT;
             }
 
-            if (glfw.getKey(window.handle, glfw.KeyEscape) == glfw.Press) {
-                const key = .Escape;
+            //-- push key events --//
 
-                var ev = Event{.keyEvent = .{
-                    .key = key,
-                    .state = .Pressed,
-                    .window_id = window.id,
-                    .modifiers = modifiers,
-                }};
+            for (std.enums.values(Key)) |key| {
+                const glfw_key = switch (key) {
+                    .Escape => glfw.KeyEscape,
+                    .Enter => glfw.KeyEnter,
+                };
 
-                const key_info = KeyInfo{ .key = key, .window_id = window.id };
-                if (self.last_key_events.get(key_info)) |state| {
-                    if (state != .JustPressed and state != .Pressed) {
-                        ev.keyEvent.state = .JustPressed;
+                if (glfw.getKey(window.handle, glfw_key) == glfw.Press) {
+                    var ev = Event{.keyEvent = .{
+                        .key = key,
+                        .state = .Pressed,
+                        .window_id = window.id,
+                        .modifiers = modifiers,
+                    }};
+
+                    const key_info = KeyInfo{ .key = key, .window_id = window.id };
+                    if (self.last_key_events.get(key_info)) |state| {
+                        if (state != .JustPressed and state != .Pressed) {
+                            ev.keyEvent.state = .JustPressed;
+                        }
                     }
+                    try self.last_key_events.put(key_info, ev.keyEvent.state);
+
+                    try registry.pushResource(ev);
                 }
-                try self.last_key_events.put(key_info, ev.keyEvent.state);
 
-                try registry.pushResource(ev);
-            }
-            if (glfw.getKey(window.handle, glfw.KeyEscape) == glfw.Release) {
-                const key = .Escape;
+                if (glfw.getKey(window.handle, glfw_key) == glfw.Release) {
+                    var ev = Event{.keyEvent = .{
+                        .key = key,
+                        .state = .Released,
+                        .window_id = window.id,
+                        .modifiers = modifiers,
+                    }};
 
-                var ev = Event{.keyEvent = .{
-                    .key = key,
-                    .state = .Released,
-                    .window_id = window.id,
-                    .modifiers = modifiers,
-                }};
-
-                const key_info = KeyInfo{ .key = key, .window_id = window.id };
-                if (self.last_key_events.get(key_info)) |state| {
-                    if (state != .JustReleased and state != .Released) {
-                        ev.keyEvent.state = .JustReleased;
+                    const key_info = KeyInfo{ .key = key, .window_id = window.id };
+                    if (self.last_key_events.get(key_info)) |state| {
+                        if (state != .JustReleased and state != .Released) {
+                            ev.keyEvent.state = .JustReleased;
+                        }
                     }
+                    try self.last_key_events.put(key_info, ev.keyEvent.state);
+
+                    try registry.pushResource(ev);
                 }
-                try self.last_key_events.put(key_info, ev.keyEvent.state);
-
-                try registry.pushResource(ev);
-            }
-
-            if (glfw.getKey(window.handle, glfw.KeyEnter) == glfw.Press) {
-                const key = .Enter;
-
-                var ev = Event{.keyEvent = .{
-                    .key = key,
-                    .state = .Pressed,
-                    .window_id = window.id,
-                    .modifiers = modifiers,
-                }};
-
-                const key_info = KeyInfo{ .key = key, .window_id = window.id };
-                if (self.last_key_events.get(key_info)) |state| {
-                    if (state != .JustPressed and state != .Pressed) {
-                        ev.keyEvent.state = .JustPressed;
-                    }
-                }
-                try self.last_key_events.put(key_info, ev.keyEvent.state);
-
-                try registry.pushResource(ev);
-            }
-            if (glfw.getKey(window.handle, glfw.KeyEnter) == glfw.Release) {
-                const key = .Enter;
-
-                var ev = Event{.keyEvent = .{
-                    .key = key,
-                    .state = .Released,
-                    .window_id = window.id,
-                    .modifiers = modifiers,
-                }};
-
-                const key_info = KeyInfo{ .key = key, .window_id = window.id };
-                if (self.last_key_events.get(key_info)) |state| {
-                    if (state != .JustReleased and state != .Released) {
-                        ev.keyEvent.state = .JustReleased;
-                    }
-                }
-                try self.last_key_events.put(key_info, ev.keyEvent.state);
-
-                try registry.pushResource(ev);
             }
         }
     };
