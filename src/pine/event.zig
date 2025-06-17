@@ -24,6 +24,7 @@ pub const Event = union(enum) {
 pub const Key = enum(glfw.Key) {
     Escape = glfw.KeyEscape,
     Enter = glfw.KeyEnter,
+    Space = glfw.KeySpace,
 };
 
 pub const KeyState = enum {

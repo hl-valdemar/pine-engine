@@ -35,6 +35,10 @@ pub const WindowComponent = struct {
         };
     }
 
+    pub fn setTitle(self: *WindowComponent, title: [*:0]const u8) void {
+        glfw.setWindowTitle(self.handle, title);
+    }
+
     fn nextId() WindowID {
         defer next_id += 1;
         return next_id;
@@ -154,10 +158,7 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
 
             // push key events
             for (std.enums.values(Key)) |key| {
-                const glfw_key = switch (key) {
-                    .Escape => glfw.KeyEscape,
-                    .Enter => glfw.KeyEnter,
-                };
+                const glfw_key = @intFromEnum(key);
 
                 if (glfw.getKey(window.handle, glfw_key) == glfw.Press) {
                     var ev = Event{ .keyEvent = .{

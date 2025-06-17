@@ -77,8 +77,8 @@ const InputSystem = struct {
 
         // react accordingly
         while (events.next()) |event| {
-            switch (event.keyEvent.state) {
-                .JustReleased => switch (event.keyEvent.key) {
+            if (event.keyEvent.state == .JustReleased) {
+                switch (event.keyEvent.key) {
                     .Escape => { // close the currently active window on escape
                         std.log.debug("escape was 'just' released, closing window! {any}", .{event});
 
@@ -100,16 +100,21 @@ const InputSystem = struct {
                         const width = rand.intRangeAtMost(u16, 250, 750);
                         const height = rand.intRangeAtMost(u16, 250, 750);
 
-                        // create and push the window
-                        const window = try pine.WindowComponent.init(.{
+                        // create the window
+                        var window = try pine.WindowComponent.init(.{
                             .width = width,
                             .height = height,
-                            .title = "Pine Engine # Extra Window!",
+                            .title = "This will not be visible for long!",
                         });
+
+                        // the window component comes with some utility functions for setting certain traits
+                        window.setTitle("Pine Engine # Extra Window!");
+
+                        // spawn the window as an entity to be managed by the ecs
                         _ = try registry.spawn(.{window});
                     },
-                },
-                else => {},
+                    else => {},
+                }
             }
         }
     }
