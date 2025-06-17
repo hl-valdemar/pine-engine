@@ -43,8 +43,6 @@ pub const WindowComponent = struct {
 
 pub const WindowPlugin = pecs.Plugin.init("window", struct {
     fn init(registry: *pecs.Registry) !void {
-        // try registry.registerResource(WindowComponent);
-
         try registry.registerTaggedSystem(InitWindowHandlerSystem, Schedule.Init.toString());
         try registry.registerTaggedSystem(DeinitWindowHandlerSystem, Schedule.Deinit.toString());
         try registry.registerTaggedSystem(PollEventsSystem, Schedule.PreUpdate.toString());
