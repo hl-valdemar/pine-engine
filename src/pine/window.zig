@@ -22,14 +22,14 @@ pub const WindowDesc = struct {
     title: [*:0]const u8,
 };
 
-pub const WindowResource = struct {
+pub const WindowComponent = struct {
     var next_id: WindowID = 0;
 
     id: WindowID,
     handle: *glfw.Window,
 
-    pub fn init(desc: WindowDesc) !WindowResource {
-        return WindowResource{
+    pub fn init(desc: WindowDesc) !WindowComponent {
+        return WindowComponent{
             .id = nextId(),
             .handle = try glfw.createWindow(desc.width, desc.height, desc.title, null, null),
         };
@@ -43,7 +43,7 @@ pub const WindowResource = struct {
 
 pub const WindowPlugin = pecs.Plugin.init("window", struct {
     fn init(registry: *pecs.Registry) !void {
-        try registry.registerResource(WindowResource);
+        // try registry.registerResource(WindowComponent);
 
         try registry.registerTaggedSystem(InitWindowHandlerSystem, Schedule.Init.toString());
         try registry.registerTaggedSystem(DeinitWindowHandlerSystem, Schedule.Deinit.toString());
@@ -114,39 +114,42 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
         }
 
         pub fn process(self: *PollEventsSystem, registry: *pecs.Registry) anyerror!void {
-            const windows = registry.queryResource(WindowResource) catch return;
+            var window_entities = registry.queryComponents(.{ WindowComponent }) catch return;
+            defer window_entities.deinit(); // necessary as we don't use the `.next()` method
 
-            if (windows.resources.len == 0)
+            if (window_entities.views.len == 0)
                 return;
 
             // loop through all windows (backwards!) and poll for events
             // note: we loop backwards to avoid problems with indeces on window destruction
             var num_closed: usize = 0;
-            var idx: i32 = @intCast(windows.resources.len - 1); // length must be greater than 0!
+            var idx: i32 = @intCast(window_entities.views.len - 1); // length must be greater than 0!
             while (idx >= 0) : (idx -= 1) {
                 const i: usize = @intCast(idx);
-                const window = windows.resources[i];
+                const entity = window_entities.views[i];
+                const window = entity.get(WindowComponent).?;
 
                 if (glfw.windowShouldClose(window.handle)) {
                     num_closed += 1;
 
                     // destroy and remove window from resources
                     glfw.destroyWindow(window.handle);
-                    try registry.removeResource(WindowResource, i);
+                    // try registry.removeResource(WindowComponent, i);
+                    _ = try registry.destroyEntity(entity.id());
 
-                    if (num_closed == windows.resources.len) {
+                    if (num_closed == window_entities.views.len) {
                         try registry.pushResource(Message{ .Shutdown = .Requested });
                         break; // no need to continue
                     }
                 }
 
-                try self.handleKeyEvents(&window, registry);
+                try self.handleKeyEvents(window, registry);
 
                 glfw.pollEvents();
             }
         }
 
-        fn handleKeyEvents(self: *PollEventsSystem, window: *const WindowResource, registry: *pecs.Registry) !void {
+        fn handleKeyEvents(self: *PollEventsSystem, window: *WindowComponent, registry: *pecs.Registry) !void {
             // set modifier values
             var modifiers: Modifier.Type = 0;
             if (glfw.getKey(window.handle, glfw.KeyLeftShift) == glfw.Press) {
@@ -214,11 +217,12 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
         pub fn process(_: *DestroyWindowSystem, registry: *pecs.Registry) anyerror!void {
             var messages = try registry.queryResource(Message);
             while (messages.next()) |message| {
-                switch (message.*) {
+                switch (message) {
                     .CloseWindow => |window_id| {
                         log.debug("got window close event! {any}", .{ message });
-                        var windows = registry.queryResource(WindowResource) catch unreachable;
-                        while (windows.next()) |window| {
+                        var window_entities = registry.queryComponents(.{ WindowComponent }) catch return;
+                        while (window_entities.next()) |entity| {
+                            const window = entity.get(WindowComponent).?;
                             if (window.id == window_id) {
                                 log.debug("found window, closing (id = {d})!", .{ message.CloseWindow });
                                 glfw.setWindowShouldClose(window.handle, true);

@@ -19,7 +19,7 @@ pub const KeyState = event.KeyState;
 pub const Modifier = event.Modifier;
 pub const Message = message.Message;
 
-pub const WindowResource = window.WindowResource;
+pub const WindowComponent = window.WindowComponent;
 pub const WindowPlugin = window.WindowPlugin;
 
 //-- private imports --//
