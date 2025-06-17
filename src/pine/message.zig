@@ -10,4 +10,3 @@ pub const Message = union(enum) {
 pub const ShutdownReason = enum {
     Requested,
 };
-

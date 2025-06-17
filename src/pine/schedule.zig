@@ -7,12 +7,12 @@ pub const Schedule = enum {
     Deinit,
 
     /// Run every tick (before Update).
-    /// 
+    ///
     /// Note: Pine generates events in this stage.
     PreUpdate,
 
     /// Run every tick.
-    /// 
+    ///
     /// Note: the user is expected to generate messages in this stage.
     Update,
 
@@ -29,4 +29,3 @@ pub const Schedule = enum {
         return @tagName(self);
     }
 };
-

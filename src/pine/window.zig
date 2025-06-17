@@ -114,7 +114,7 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
         }
 
         pub fn process(self: *PollEventsSystem, registry: *pecs.Registry) anyerror!void {
-            var window_entities = registry.queryComponents(.{ WindowComponent }) catch return;
+            var window_entities = registry.queryComponents(.{WindowComponent}) catch return;
             defer window_entities.deinit(); // necessary as we don't use the `.next()` method
 
             if (window_entities.views.len == 0)
@@ -149,7 +149,11 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
             }
         }
 
-        fn handleKeyEvents(self: *PollEventsSystem, window: *WindowComponent, registry: *pecs.Registry) !void {
+        fn handleKeyEvents(
+            self: *PollEventsSystem,
+            window: *WindowComponent,
+            registry: *pecs.Registry,
+        ) !void {
             // set modifier values
             var modifiers: Modifier.Type = 0;
             if (glfw.getKey(window.handle, glfw.KeyLeftShift) == glfw.Press) {
@@ -167,12 +171,12 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
                 };
 
                 if (glfw.getKey(window.handle, glfw_key) == glfw.Press) {
-                    var ev = Event{.keyEvent = .{
+                    var ev = Event{ .keyEvent = .{
                         .key = key,
                         .state = .Pressed,
                         .window_id = window.id,
                         .modifiers = modifiers,
-                    }};
+                    } };
 
                     const key_info = KeyInfo{ .key = key, .window_id = window.id };
                     if (self.last_key_events.get(key_info)) |state| {
@@ -186,12 +190,12 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
                 }
 
                 if (glfw.getKey(window.handle, glfw_key) == glfw.Release) {
-                    var ev = Event{.keyEvent = .{
+                    var ev = Event{ .keyEvent = .{
                         .key = key,
                         .state = .Released,
                         .window_id = window.id,
                         .modifiers = modifiers,
-                    }};
+                    } };
 
                     const key_info = KeyInfo{ .key = key, .window_id = window.id };
                     if (self.last_key_events.get(key_info)) |state| {
@@ -219,17 +223,17 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
             while (messages.next()) |message| {
                 switch (message) {
                     .CloseWindow => |window_id| {
-                        log.debug("got window close event! {any}", .{ message });
-                        var window_entities = registry.queryComponents(.{ WindowComponent }) catch return;
+                        log.debug("got window close event! {any}", .{message});
+                        var window_entities = registry.queryComponents(.{WindowComponent}) catch return;
                         while (window_entities.next()) |entity| {
                             const window = entity.get(WindowComponent).?;
                             if (window.id == window_id) {
-                                log.debug("found window, closing (id = {d})!", .{ message.CloseWindow });
+                                log.debug("found window, closing (id = {d})!", .{message.CloseWindow});
                                 glfw.setWindowShouldClose(window.handle, true);
                             }
                         }
                     },
-                    else => {}
+                    else => {},
                 }
             }
         }

@@ -42,7 +42,7 @@ pub const App = struct {
     }
 
     /// Run the app.
-    pub fn run(self:*App) !void {
+    pub fn run(self: *App) !void {
         const system_process_err_fmt = "failed to process systems with tag [{s}]: {}";
 
         // first initialize the app
@@ -54,8 +54,9 @@ pub const App = struct {
 
         // run an update loop if any update systems are registered
         if (self.systemRegistered(.PreUpdate) or
-        self.systemRegistered(.Update) or
-        self.systemRegistered(.PostUpdate)) {
+            self.systemRegistered(.Update) or
+            self.systemRegistered(.PostUpdate))
+        {
             var first = self.registry.queryResource(Message) catch unreachable; // Message should always be registered!
             defer first.deinit();
 
@@ -102,7 +103,7 @@ pub const App = struct {
         // when done, clean up
         if (self.systemRegistered(.Deinit)) {
             self.processSystems(.Deinit) catch |err| {
-                log.err(system_process_err_fmt, .{Schedule.Deinit.toString(), err});
+                log.err(system_process_err_fmt, .{ Schedule.Deinit.toString(), err });
             };
         }
     }

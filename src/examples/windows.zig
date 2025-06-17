@@ -46,7 +46,7 @@ const SetupSystem = struct {
         });
 
         // spawn the window
-        _ = try registry.spawn(.{ window });
+        _ = try registry.spawn(.{window});
     }
 };
 
@@ -80,7 +80,7 @@ const InputSystem = struct {
             switch (event.keyEvent.state) {
                 .JustReleased => switch (event.keyEvent.key) {
                     .Escape => { // close the currently active window on escape
-                        std.log.debug("escape was 'just' released, closing window! {any}", .{ event });
+                        std.log.debug("escape was 'just' released, closing window! {any}", .{event});
 
                         // escape + right shift -> stop the program
                         if (event.keyEvent.modifiers & pine.Modifier.RIGHT_SHIFT != 0) {
@@ -94,7 +94,7 @@ const InputSystem = struct {
                         }
                     },
                     .Enter => { // spawn a new window on enter
-                        std.log.debug("enter was 'just' released, spawning window! {any}", .{ event });
+                        std.log.debug("enter was 'just' released, spawning window! {any}", .{event});
 
                         // random width and height for endless fun
                         const width = rand.intRangeAtMost(u16, 250, 750);
@@ -106,10 +106,10 @@ const InputSystem = struct {
                             .height = height,
                             .title = "Pine Engine # Extra Window!",
                         });
-                        _ = try registry.spawn(.{ window });
+                        _ = try registry.spawn(.{window});
                     },
                 },
-                else => {}
+                else => {},
             }
         }
     }
