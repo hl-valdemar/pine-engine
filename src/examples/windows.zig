@@ -25,7 +25,7 @@ pub fn main() !void {
     try app.registerSystem(InputSystem, .Update);
 
     // fire off the app
-    app.run();
+    try app.run();
 }
 
 /// This system is simply responsible for spawning a window on startup.
@@ -38,15 +38,15 @@ const SetupSystem = struct {
     pub fn deinit(_: *SetupSystem) void {}
 
     pub fn process(_: *SetupSystem, registry: *pine.ecs.Registry) anyerror!void {
-        // create the resource
-        const window = try pine.WindowResource.init(.{
+        // create the window component
+        const window = try pine.WindowComponent.init(.{
             .width = 500,
             .height = 500,
             .title = "Pine Engine # Window Example",
         });
 
         // spawn the window
-        try registry.pushResource(window);
+        _ = try registry.spawn(.{ window });
     }
 };
 
@@ -100,13 +100,13 @@ const InputSystem = struct {
                         const width = rand.intRangeAtMost(u16, 250, 750);
                         const height = rand.intRangeAtMost(u16, 250, 750);
 
-                        // create and push the window resource
-                        const window = try pine.WindowResource.init(.{
+                        // create and push the window
+                        const window = try pine.WindowComponent.init(.{
                             .width = width,
                             .height = height,
                             .title = "Pine Engine # Extra Window!",
                         });
-                        try registry.pushResource(window);
+                        _ = try registry.spawn(.{ window });
                     },
                 },
                 else => {}

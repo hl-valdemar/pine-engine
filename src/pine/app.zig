@@ -42,7 +42,7 @@ pub const App = struct {
     }
 
     /// Run the app.
-    pub fn run(self:*App) void {
+    pub fn run(self:*App) !void {
         const system_process_err_fmt = "failed to process systems with tag [{s}]: {}";
 
         // first initialize the app
@@ -56,10 +56,14 @@ pub const App = struct {
         if (self.systemRegistered(.PreUpdate) or
         self.systemRegistered(.Update) or
         self.systemRegistered(.PostUpdate)) {
-            var result = self.registry.queryResource(Message) catch unreachable; // Message should always be registered!
-            var message = result.next();
+            var first = self.registry.queryResource(Message) catch unreachable; // Message should always be registered!
+            defer first.deinit();
 
-            while (message == null or message.?.* != Message.Shutdown) {
+            const message_ptr = try self.allocator.create(?Message);
+            defer self.allocator.destroy(message_ptr);
+            message_ptr.* = first.next();
+
+            while (message_ptr.* == null or message_ptr.*.? != Message.Shutdown) {
                 // note: system events may be generated here
                 if (self.systemRegistered(.PreUpdate)) {
                     self.processSystems(.PreUpdate) catch |err| {
@@ -82,8 +86,10 @@ pub const App = struct {
                 }
 
                 // store this value before clearing!
-                result = self.registry.queryResource(Message) catch unreachable; // Message should always be registered!
-                message = result.next();
+                // question: maybe the shutdown message could be burried under other messages - iterate to search for it?
+                var messages = self.registry.queryResource(Message) catch unreachable;
+                defer messages.deinit();
+                message_ptr.* = messages.next();
 
                 // clear all events including those not acted upon
                 self.registry.clearResource(Event) catch unreachable;
