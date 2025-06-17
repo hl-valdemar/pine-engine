@@ -87,7 +87,7 @@ pub fn build(b: *std.Build) !void {
     // running the unit tests.
     test_step.dependOn(&run_lib_unit_tests.step);
 
-    // Add all files names in the src folder to `files`
+    // Build all files names in the src/examples folder
     const examples_path = "src/examples/";
     var dir = try std.fs.cwd().openDir(examples_path, .{ .iterate = true });
     var it = dir.iterate();
@@ -96,7 +96,7 @@ pub fn build(b: *std.Build) !void {
             continue;
         }
 
-        std.debug.print("[building...] {s}{s}\n", .{ examples_path, file.name });
+        // std.debug.print("[building...] {s}{s}\n", .{ examples_path, file.name });
 
         const allocator = std.heap.page_allocator;
         const full_path = std.fmt.allocPrint(allocator, "{s}{s}", .{ examples_path, file.name }) catch "format failed";
