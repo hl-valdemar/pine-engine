@@ -115,30 +115,21 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
 
         pub fn process(self: *PollEventsSystem, registry: *pecs.Registry) anyerror!void {
             var window_entities = registry.queryComponents(.{WindowComponent}) catch return;
-            defer window_entities.deinit(); // necessary as we don't use the `.next()` method
 
-            if (window_entities.views.len == 0)
-                return;
-
-            // loop through all windows (backwards!) and poll for events
-            // note: we loop backwards to avoid problems with indeces on window destruction
-            var num_closed: usize = 0;
-            var idx: i32 = @intCast(window_entities.views.len - 1); // length must be greater than 0!
-            while (idx >= 0) : (idx -= 1) {
-                const i: usize = @intCast(idx);
-                const entity = window_entities.views[i];
+            // loop through all windows and poll for events
+            var num_closed: u32 = 0;
+            while (window_entities.next()) |entity| {
                 const window = entity.get(WindowComponent).?;
-
                 if (glfw.windowShouldClose(window.handle)) {
                     num_closed += 1;
 
                     // destroy and remove window from resources
                     glfw.destroyWindow(window.handle);
-                    // try registry.removeResource(WindowComponent, i);
                     _ = try registry.destroyEntity(entity.id());
 
                     if (num_closed == window_entities.views.len) {
                         try registry.pushResource(Message{ .Shutdown = .Requested });
+                        window_entities.deinit(); // necessary as we don't reach the auto-deinit at the end of the iterator
                         break; // no need to continue
                     }
                 }
