@@ -29,7 +29,7 @@ pub fn main() !void {
 }
 
 /// This system is simply responsible for spawning a window on startup.
-/// It runs on the .Init schedule, meaning only once on initialization.
+/// It'll be registered to run on the .Init schedule, meaning only once on initialization.
 const SetupSystem = struct {
     pub fn init(_: Allocator) anyerror!SetupSystem {
         return SetupSystem{};
@@ -51,7 +51,7 @@ const SetupSystem = struct {
 };
 
 /// This system is responsible for handling key presses.
-/// It runs on the .Update schedule, querying for system events and reacting accordingly.
+/// It'll be registered to run on the .Update schedule, querying for system events and reacting accordingly.
 const InputSystem = struct {
     prng: std.Random.Xoshiro256,
 
