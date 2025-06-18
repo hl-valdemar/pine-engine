@@ -50,29 +50,29 @@ pub fn build(b: *std.Build) !void {
     lib_mod.addImport("zm", zm_dep.module("zm"));
     lib_mod.addImport("glfw", zglfw_dep.module("glfw"));
 
-    const test_step = b.step("test", "Run unit tests");
-
     // Now, we will create a static library based on the module we created above.
     // This creates a `std.Build.Step.Compile`, which is the build step responsible
     // for actually invoking the compiler.
     const lib = b.addLibrary(.{
         .linkage = .static,
-        .name = "pineengine",
+        .name = "pine",
         .root_module = lib_mod,
     });
 
     // Add src/lib for libraries.
-    lib.addIncludePath(.{
-        .src_path = .{ 
-            .owner = b,
-            .sub_path = "src/lib",
-        },
-    });
+    // lib.addIncludePath(.{
+    //     .src_path = .{
+    //         .owner = b,
+    //         .sub_path = "src/lib",
+    //     },
+    // });
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
     b.installArtifact(lib);
+
+    const test_step = b.step("test", "Run unit tests");
 
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
@@ -86,6 +86,15 @@ pub fn build(b: *std.Build) !void {
     // the `zig build --help` menu, providing a way for the user to request
     // running the unit tests.
     test_step.dependOn(&run_lib_unit_tests.step);
+
+    const install_docs = b.addInstallDirectory(.{
+        .source_dir = lib.getEmittedDocs(),
+        .install_dir = .prefix,
+        .install_subdir = "docs",
+    });
+
+    const docs_step = b.step("docs", "Install docs into zig-out/docs");
+    docs_step.dependOn(&install_docs.step);
 
     // Build all files names in the src/examples folder
     const examples_path = "src/examples/";
@@ -126,7 +135,7 @@ pub fn build(b: *std.Build) !void {
 
         // Add src/lib for libraries.
         // exe.addIncludePath(.{
-        //     .src_path = .{ 
+        //     .src_path = .{
         //         .owner = b,
         //         .sub_path = "src/lib",
         //     },
@@ -151,7 +160,7 @@ pub fn build(b: *std.Build) !void {
             run_cmd.addArgs(args);
         }
 
-        const run_step_desc = std.fmt.allocPrint(allocator, "Run {s} example", .{ example_name }) catch "format failed";
+        const run_step_desc = std.fmt.allocPrint(allocator, "Run {s} example", .{example_name}) catch "format failed";
         defer allocator.free(run_step_desc);
 
         // This creates a build step. It will be visible in the `zig build --help` menu,
