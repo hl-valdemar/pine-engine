@@ -4,6 +4,8 @@ const Allocator = std.mem.Allocator;
 const pine = @import("pine");
 const pecs = pine.ecs;
 
+const glfw = @import("glfw");
+
 pub const std_options = std.Options{
     .logFn = pine.log.logFn,
 };
@@ -100,11 +102,28 @@ const InputSystem = struct {
                         const width = rand.intRangeAtMost(u16, 250, 750);
                         const height = rand.intRangeAtMost(u16, 250, 750);
 
+                        const monitor = glfw.getPrimaryMonitor();
+
+                        var width_physical: c_int = undefined;
+                        var height_physical: c_int = undefined;
+                        var x_scale: f32 = undefined;
+                        var y_scale: f32 = undefined;
+
+                        glfw.getMonitorPhysicalSize(monitor, &width_physical, &height_physical);
+                        glfw.getMonitorContentScale(monitor, &x_scale, &y_scale);
+
+                        const width_logical: u16 = @intFromFloat(@as(f32, @floatFromInt(width_physical)) * x_scale);
+                        const height_logical: u16 = @intFromFloat(@as(f32, @floatFromInt(height_physical)) * y_scale);
+
+                        const x = rand.intRangeAtMost(u16, 0, width_logical);
+                        const y = rand.intRangeAtMost(u16, 0, height_logical);
+
                         // create the window
                         var window = try pine.WindowComponent.init(.{
                             .width = width,
                             .height = height,
                             .title = "This will not be visible for long!",
+                            .position = .{ .x = x, .y = y },
                         });
 
                         // the window component comes with some utility functions for setting certain traits

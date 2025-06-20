@@ -16,10 +16,16 @@ const Modifier = event.Modifier;
 
 pub const WindowID = usize;
 
+pub const WindowPosition = struct {
+    x: c_int,
+    y: c_int,
+};
+
 pub const WindowDesc = struct {
     width: c_int,
     height: c_int,
     title: [*:0]const u8,
+    position: ?WindowPosition = null,
 };
 
 pub const WindowComponent = struct {
@@ -29,14 +35,24 @@ pub const WindowComponent = struct {
     handle: *glfw.Window,
 
     pub fn init(desc: WindowDesc) !WindowComponent {
+        const handle = try glfw.createWindow(desc.width, desc.height, desc.title, null, null);
+
+        if (desc.position) |p| {
+            glfw.setWindowPos(handle, p.x, p.y);
+        }
+
         return WindowComponent{
             .id = nextId(),
-            .handle = try glfw.createWindow(desc.width, desc.height, desc.title, null, null),
+            .handle = handle,
         };
     }
 
     pub fn setTitle(self: *WindowComponent, title: [*:0]const u8) void {
         glfw.setWindowTitle(self.handle, title);
+    }
+
+    pub fn setPosition(self: *WindowComponent, x: c_int, y: c_int) void {
+        glfw.setWindowPos(self.handle, x, y);
     }
 
     fn nextId() WindowID {

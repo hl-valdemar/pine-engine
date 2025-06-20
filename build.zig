@@ -121,7 +121,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod.addImport("pecs", pecs_dep.module("pecs"));
         // exe_mod.addImport("sokol", sokol_dep.module("sokol"));
         exe_mod.addImport("zm", zm_dep.module("zm"));
-        // exe_mod.addImport("glfw", zglfw_dep.module("glfw"));
+        exe_mod.addImport("glfw", zglfw_dep.module("glfw"));
 
         var words = std.mem.splitAny(u8, file.name, ".");
         const example_name = words.next().?;

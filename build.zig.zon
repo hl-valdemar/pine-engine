@@ -41,8 +41,8 @@
             .hash = "sokol-0.1.0-pb1HK0yHLAAp0QKI76BDMpoCCRA-QkhgU4-1Ir1i0A5b",
         },
         .pecs = .{
-            .url = "git+https://github.com/hl-valdemar/pine-ecs#b6bc460833d3d9cf1e7ec1099f3338f8916229d7",
-            .hash = "pine_ecs-0.1.1-4KYRKKw5AQDUd0pMXX8_mTX_7IyZIl_ALMBgNuu1C9Pb",
+            .url = "git+https://github.com/hl-valdemar/pine-ecs#4b1480442163d1ff19b1028a7c4b6420bbfd855f",
+            .hash = "pine_ecs-0.1.1-4KYRKF1EAQASXBh_8Yv4e_Guq-Es3evz-STftMzQUeJE",
         },
         .zm = .{
             .url = "git+https://github.com/griush/zm#d3b2d90f9a1818f167abca40b7b708f9e9765638",
