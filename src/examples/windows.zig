@@ -45,7 +45,7 @@ const SetupSystem = struct {
             .title = "Pine Engine # Window Example",
         });
 
-        // spawn the window
+        // spawn the window entity
         _ = try registry.spawn(.{window});
     }
 };
