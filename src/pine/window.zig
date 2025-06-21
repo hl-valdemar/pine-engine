@@ -16,16 +16,11 @@ const Modifier = event.Modifier;
 
 pub const WindowID = usize;
 
-pub const WindowPosition = struct {
-    x: c_int,
-    y: c_int,
-};
-
 pub const WindowDesc = struct {
     width: c_int,
     height: c_int,
     title: [*:0]const u8,
-    position: ?WindowPosition = null,
+    position: ?struct { x: c_int, y: c_int } = null,
 };
 
 pub const WindowComponent = struct {

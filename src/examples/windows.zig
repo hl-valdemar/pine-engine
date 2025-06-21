@@ -102,21 +102,9 @@ const InputSystem = struct {
                         const width = rand.intRangeAtMost(u16, 250, 750);
                         const height = rand.intRangeAtMost(u16, 250, 750);
 
+                        // why not make the position random as well
                         const monitor = glfw.getPrimaryMonitor();
-
-                        var width_physical: c_int = undefined;
-                        var height_physical: c_int = undefined;
-                        var x_scale: f32 = undefined;
-                        var y_scale: f32 = undefined;
-
-                        glfw.getMonitorPhysicalSize(monitor, &width_physical, &height_physical);
-                        glfw.getMonitorContentScale(monitor, &x_scale, &y_scale);
-
-                        const width_logical: u16 = @intFromFloat(@as(f32, @floatFromInt(width_physical)) * x_scale);
-                        const height_logical: u16 = @intFromFloat(@as(f32, @floatFromInt(height_physical)) * y_scale);
-
-                        const x = rand.intRangeAtMost(u16, 0, width_logical);
-                        const y = rand.intRangeAtMost(u16, 0, height_logical);
+                        const x, const y = computePosition(monitor, rand);
 
                         // create the window
                         var window = try pine.WindowComponent.init(.{
@@ -138,3 +126,22 @@ const InputSystem = struct {
         }
     }
 };
+
+// utility function, just ignore
+fn computePosition(monitor: *glfw.Monitor, rand: std.Random) struct { u16, u16 } {
+    var width_physical: c_int = undefined;
+    var height_physical: c_int = undefined;
+    var x_scale: f32 = undefined;
+    var y_scale: f32 = undefined;
+
+    glfw.getMonitorPhysicalSize(monitor, &width_physical, &height_physical);
+    glfw.getMonitorContentScale(monitor, &x_scale, &y_scale);
+
+    const width_logical: u16 = @intFromFloat(@as(f32, @floatFromInt(width_physical)) * x_scale);
+    const height_logical: u16 = @intFromFloat(@as(f32, @floatFromInt(height_physical)) * y_scale);
+
+    const x = rand.intRangeAtMost(u16, 0, width_logical);
+    const y = rand.intRangeAtMost(u16, 0, height_logical);
+
+    return .{ x, y };
+}
