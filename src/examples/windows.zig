@@ -131,10 +131,10 @@ const InputSystem = struct {
 fn computePosition(monitor: *glfw.Monitor, rand: std.Random) struct { u16, u16 } {
     var width_physical: c_int = undefined;
     var height_physical: c_int = undefined;
+    glfw.getMonitorPhysicalSize(monitor, &width_physical, &height_physical);
+
     var x_scale: f32 = undefined;
     var y_scale: f32 = undefined;
-
-    glfw.getMonitorPhysicalSize(monitor, &width_physical, &height_physical);
     glfw.getMonitorContentScale(monitor, &x_scale, &y_scale);
 
     const width_logical: u16 = @intFromFloat(@as(f32, @floatFromInt(width_physical)) * x_scale);
