@@ -81,22 +81,22 @@ const InputSystem = struct {
         while (events.next()) |event| {
             if (event.keyEvent.state == .JustReleased) {
                 switch (event.keyEvent.key) {
-                    .Escape => { // close the currently active window on escape
-                        std.log.debug("escape was 'just' released, closing window! {any}", .{event});
-
+                    .Escape => {
                         // escape + right shift -> stop the program
                         if (event.keyEvent.modifiers & pine.Modifier.RIGHT_SHIFT != 0) {
+                            std.log.debug("shift+escape was 'just' released, shutting down! [{any}]", .{event});
                             try registry.pushResource(pine.Message{
                                 .Shutdown = .Requested,
                             });
                         } else { // just escape -> close active window
+                            std.log.debug("escape was 'just' released, closing window! [{any}]", .{event});
                             try registry.pushResource(pine.Message{
                                 .CloseWindow = event.keyEvent.window_id,
                             });
                         }
                     },
                     .Enter => { // spawn a new window on enter
-                        std.log.debug("enter was 'just' released, spawning window! {any}", .{event});
+                        std.log.debug("enter was 'just' released, spawning window! [{any}]", .{event});
 
                         // random width and height for endless fun
                         const width = rand.intRangeAtMost(u16, 250, 750);
