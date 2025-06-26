@@ -67,9 +67,7 @@ pub fn build(b: *std.Build) !void {
     var dir = try std.fs.cwd().openDir(examples_path, .{ .iterate = true });
     var it = dir.iterate();
     while (try it.next()) |file| {
-        if (file.kind != .file) {
-            continue;
-        }
+        if (file.kind != .file) continue;
 
         const allocator = std.heap.page_allocator;
         const full_path = std.fmt.allocPrint(allocator, "{s}{s}", .{ examples_path, file.name }) catch "format failed";
