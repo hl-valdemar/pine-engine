@@ -1,6 +1,6 @@
-const c = @cImport(@cInclude("GLFW/glfw3.h"));
-
 const WindowID = @import("window.zig").WindowID;
+
+const c = @cImport(@cInclude("GLFW/glfw3.h"));
 
 pub const Modifier = struct {
     pub const Type = c_int;

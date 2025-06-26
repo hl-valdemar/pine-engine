@@ -1,13 +1,14 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const c = @cImport(@cInclude("GLFW/glfw3.h"));
 const pecs = @import("pecs");
 const sokol = @import("sokol");
 const gfx = sokol.gfx;
 
 const Schedule = @import("schedule.zig").Schedule;
 const WindowComponent = @import("window.zig").WindowComponent;
+
+const c = @cImport(@cInclude("GLFW/glfw3.h"));
 
 const RendererPlugin = pecs.Plugin.init("renderer", struct {
     fn init(registry: *pecs.Registry) anyerror!void {

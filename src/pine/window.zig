@@ -3,8 +3,6 @@ const Allocator = std.mem.Allocator;
 
 const pecs = @import("pecs");
 
-const c = @cImport(@cInclude("GLFW/glfw3.h"));
-
 const event = @import("event.zig");
 const Event = event.Event;
 const Key = event.Key;
@@ -13,6 +11,8 @@ const Modifier = event.Modifier;
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
 const Schedule = @import("schedule.zig").Schedule;
+
+const c = @cImport(@cInclude("GLFW/glfw3.h"));
 
 pub const WindowID = usize;
 
