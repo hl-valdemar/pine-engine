@@ -1,8 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-// const glfw = @import("glfw");
-const c = @cImport(@cInclude("GLFW/glfw3.h"));
 const pine = @import("pine");
 const pecs = pine.ecs;
 
@@ -124,6 +122,9 @@ const InputSystem = struct {
         }
     }
 };
+
+// utility import
+const c = @cImport(@cInclude("GLFW/glfw3.h"));
 
 // utility function, just ignore
 fn computeWindowSize(rand: std.Random) struct { u16, u16 } {

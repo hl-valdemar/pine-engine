@@ -35,6 +35,9 @@ pub fn build(b: *std.Build) !void {
         .root_module = lib_mod,
     });
 
+    lib.linkSystemLibrary("glfw");
+    lib.linkSystemLibrary("glfw3");
+
     b.installArtifact(lib);
 
     // Tests steps
@@ -64,12 +67,8 @@ pub fn build(b: *std.Build) !void {
     while (try it.next()) |file| {
         if (file.kind != .file) continue;
 
-        // Build path
-        const allocator = std.heap.page_allocator;
-        const full_path = std.fmt.allocPrint(allocator, "{s}{s}", .{ examples_path, file.name }) catch "format failed";
-        defer allocator.free(full_path);
-
         // Create executable module
+        const full_path = b.pathJoin(&.{ examples_path, file.name });
         const exe_mod = b.createModule(.{
             .root_source_file = b.path(full_path),
             .target = target,
@@ -77,8 +76,7 @@ pub fn build(b: *std.Build) !void {
         });
 
         exe_mod.addImport("pine", lib_mod);
-        exe_mod.addImport("pecs", pecs_dep.module("pecs"));
-        exe_mod.addImport("zm", zm_dep.module("zm"));
+        lib_mod.addImport("zm", zm_dep.module("zm"));
 
         // Extract name
         var words = std.mem.splitAny(u8, file.name, ".");
@@ -100,6 +98,7 @@ pub fn build(b: *std.Build) !void {
             run_cmd.addArgs(args);
         }
 
+        const allocator = std.heap.page_allocator;
         const run_step_desc = std.fmt.allocPrint(allocator, "Run {s} example", .{example_name}) catch "format failed";
         defer allocator.free(run_step_desc);
 
