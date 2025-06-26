@@ -57,7 +57,7 @@ pub const WindowComponent = struct {
 };
 
 pub const WindowPlugin = pecs.Plugin.init("window", struct {
-    fn init(registry: *pecs.Registry) !void {
+    fn init(registry: *pecs.Registry) anyerror!void {
         try registry.registerTaggedSystem(InitWindowHandlerSystem, Schedule.Init.toString());
         try registry.registerTaggedSystem(DeinitWindowHandlerSystem, Schedule.Deinit.toString());
         try registry.registerTaggedSystem(PollEventsSystem, Schedule.PreUpdate.toString());
@@ -65,12 +65,8 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
     }
 
     const InitWindowHandlerSystem = struct {
-        allocator: Allocator,
-
-        pub fn init(allocator: Allocator) anyerror!InitWindowHandlerSystem {
-            return InitWindowHandlerSystem{
-                .allocator = allocator,
-            };
+        pub fn init(_: Allocator) anyerror!InitWindowHandlerSystem {
+            return InitWindowHandlerSystem{};
         }
 
         pub fn deinit(_: *InitWindowHandlerSystem) void {}
