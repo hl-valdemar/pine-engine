@@ -48,10 +48,6 @@
             .url = "git+https://github.com/griush/zm#d3b2d90f9a1818f167abca40b7b708f9e9765638",
             .hash = "zm-0.3.0-cLX-WbfMAAAlqyfozvJsnhWlHO1MdlkVajyEDi6OISgO",
         },
-        .zglfw = .{
-            .url = "git+https://github.com/IridescenceTech/zglfw#5d25d66b3d4912c9cb66e4db9dfb80a6eecc84ad",
-            .hash = "zglfw-0.1.0-BghZXfnRAACSrPga22je1XilEj1QNXrtv6w4HIUFqdks",
-        },
     },
     .paths = .{
         "build.zig",

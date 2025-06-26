@@ -16,10 +16,6 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
-    const zglfw_dep = b.dependency("zglfw", .{
-        .target = target,
-        .optimize = optimize,
-    });
 
     // Create the library module
     const lib_mod = b.createModule(.{
@@ -31,7 +27,6 @@ pub fn build(b: *std.Build) !void {
     lib_mod.addImport("pecs", pecs_dep.module("pecs"));
     lib_mod.addImport("sokol", sokol_dep.module("sokol"));
     lib_mod.addImport("zm", zm_dep.module("zm"));
-    lib_mod.addImport("glfw", zglfw_dep.module("glfw"));
 
     // Create static library
     const lib = b.addLibrary(.{
@@ -69,6 +64,7 @@ pub fn build(b: *std.Build) !void {
     while (try it.next()) |file| {
         if (file.kind != .file) continue;
 
+        // Build path
         const allocator = std.heap.page_allocator;
         const full_path = std.fmt.allocPrint(allocator, "{s}{s}", .{ examples_path, file.name }) catch "format failed";
         defer allocator.free(full_path);
@@ -83,8 +79,8 @@ pub fn build(b: *std.Build) !void {
         exe_mod.addImport("pine", lib_mod);
         exe_mod.addImport("pecs", pecs_dep.module("pecs"));
         exe_mod.addImport("zm", zm_dep.module("zm"));
-        exe_mod.addImport("glfw", zglfw_dep.module("glfw"));
 
+        // Extract name
         var words = std.mem.splitAny(u8, file.name, ".");
         const example_name = words.next().?;
 
