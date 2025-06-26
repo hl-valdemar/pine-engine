@@ -1,25 +1,25 @@
-const pecs = @import("pecs");
-const glfw = @import("glfw");
-const log = @import("log.zig");
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const Schedule = @import("schedule.zig").Schedule;
-const Message = @import("message.zig").Message;
+const pecs = @import("pecs");
+
+const c = @cImport(@cInclude("GLFW/glfw3.h"));
 
 const event = @import("event.zig");
 const Event = event.Event;
 const Key = event.Key;
 const KeyState = event.KeyState;
 const Modifier = event.Modifier;
+const log = @import("log.zig");
+const Message = @import("message.zig").Message;
+const Schedule = @import("schedule.zig").Schedule;
 
 pub const WindowID = usize;
 
 pub const WindowDesc = struct {
     width: c_int,
     height: c_int,
-    title: [*:0]const u8,
+    title: [*c]const u8,
     position: ?struct { x: c_int, y: c_int } = null,
 };
 
@@ -27,13 +27,14 @@ pub const WindowComponent = struct {
     var next_id: WindowID = 0;
 
     id: WindowID,
-    handle: *glfw.Window,
+    handle: *c.GLFWwindow,
 
     pub fn init(desc: WindowDesc) !WindowComponent {
-        const handle = try glfw.createWindow(desc.width, desc.height, desc.title, null, null);
+        const handle = c.glfwCreateWindow(desc.width, desc.height, desc.title, null, null) orelse
+            return error.WindowCreationError;
 
         if (desc.position) |p| {
-            glfw.setWindowPos(handle, p.x, p.y);
+            c.glfwSetWindowPos(handle, p.x, p.y);
         }
 
         return WindowComponent{
@@ -42,12 +43,12 @@ pub const WindowComponent = struct {
         };
     }
 
-    pub fn setTitle(self: *WindowComponent, title: [*:0]const u8) void {
-        glfw.setWindowTitle(self.handle, title);
+    pub fn setTitle(self: *WindowComponent, title: [*c]const u8) void {
+        c.glfwSetWindowTitle(self.handle, title);
     }
 
     pub fn setPosition(self: *WindowComponent, x: c_int, y: c_int) void {
-        glfw.setWindowPos(self.handle, x, y);
+        c.glfwSetWindowPos(self.handle, x, y);
     }
 
     fn nextId() WindowID {
@@ -58,20 +59,21 @@ pub const WindowComponent = struct {
 
 pub const WindowPlugin = pecs.Plugin.init("window", struct {
     fn init(registry: *pecs.Registry) anyerror!void {
-        try registry.registerTaggedSystem(InitWindowHandlerSystem, Schedule.Init.toString());
-        try registry.registerTaggedSystem(DeinitWindowHandlerSystem, Schedule.Deinit.toString());
-        try registry.registerTaggedSystem(PollEventsSystem, Schedule.PreUpdate.toString());
-        try registry.registerTaggedSystem(DestroyWindowSystem, Schedule.PostUpdate.toString());
+        try registry.registerTaggedSystem(GLFW_InitSystem, Schedule.Init.toString());
+        try registry.registerTaggedSystem(EventPollingSystem, Schedule.PreUpdate.toString());
+        try registry.registerTaggedSystem(WindowDestructionSystem, Schedule.PostUpdate.toString());
     }
 
-    const InitWindowHandlerSystem = struct {
-        pub fn init(_: Allocator) anyerror!InitWindowHandlerSystem {
-            return InitWindowHandlerSystem{};
+    const GLFW_InitSystem = struct {
+        pub fn init(_: Allocator) anyerror!GLFW_InitSystem {
+            return GLFW_InitSystem{};
         }
 
-        pub fn deinit(_: *InitWindowHandlerSystem) void {}
+        pub fn deinit(_: *GLFW_InitSystem) void {
+            terminateGLFW();
+        }
 
-        pub fn process(_: *InitWindowHandlerSystem, _: *pecs.Registry) anyerror!void {
+        pub fn process(_: *GLFW_InitSystem, _: *pecs.Registry) anyerror!void {
             try setupGLFW();
         }
 
@@ -80,31 +82,20 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
             var minor: i32 = 0;
             var rev: i32 = 0;
 
-            glfw.getVersion(&major, &minor, &rev);
+            c.glfwGetVersion(&major, &minor, &rev);
             log.debug("using GLFW v{}.{}.{}", .{ major, minor, rev });
 
-            try glfw.init();
-        }
-    };
-
-    const DeinitWindowHandlerSystem = struct {
-        pub fn init(_: Allocator) anyerror!DeinitWindowHandlerSystem {
-            return DeinitWindowHandlerSystem{};
-        }
-
-        pub fn deinit(_: *DeinitWindowHandlerSystem) void {}
-
-        pub fn process(_: *DeinitWindowHandlerSystem, _: *pecs.Registry) anyerror!void {
-            terminateGLFW();
+            if (c.glfwInit() == c.GLFW_FALSE)
+                return error.GLFW_InitError;
         }
 
         fn terminateGLFW() void {
             log.debug("terminating GLFW...", .{});
-            glfw.terminate();
+            c.glfwTerminate();
         }
     };
 
-    const PollEventsSystem = struct {
+    const EventPollingSystem = struct {
         const KeyInfo = struct {
             key: Key,
             window_id: WindowID,
@@ -112,28 +103,28 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
 
         last_key_events: std.AutoHashMap(KeyInfo, KeyState),
 
-        pub fn init(allocator: std.mem.Allocator) anyerror!PollEventsSystem {
-            return PollEventsSystem{
+        pub fn init(allocator: std.mem.Allocator) anyerror!EventPollingSystem {
+            return EventPollingSystem{
                 .last_key_events = std.AutoHashMap(KeyInfo, KeyState).init(allocator),
             };
         }
 
-        pub fn deinit(self: *PollEventsSystem) void {
+        pub fn deinit(self: *EventPollingSystem) void {
             self.last_key_events.deinit();
         }
 
-        pub fn process(self: *PollEventsSystem, registry: *pecs.Registry) anyerror!void {
+        pub fn process(self: *EventPollingSystem, registry: *pecs.Registry) anyerror!void {
             var window_entities = registry.queryComponents(.{WindowComponent}) catch return;
 
             // loop through all windows and poll for events
             var num_closed: u32 = 0;
             while (window_entities.next()) |entity| {
                 const window = entity.get(WindowComponent).?;
-                if (glfw.windowShouldClose(window.handle)) {
+                if (c.glfwWindowShouldClose(window.handle) == c.GLFW_TRUE) {
                     num_closed += 1;
 
                     // destroy and remove window from resources
-                    glfw.destroyWindow(window.handle);
+                    c.glfwDestroyWindow(window.handle);
                     _ = try registry.destroyEntity(entity.id());
 
                     if (num_closed == window_entities.views.len) {
@@ -145,35 +136,36 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
 
                 try self.handleKeyEvents(window, registry);
 
-                glfw.pollEvents();
+                c.glfwPollEvents();
             }
         }
 
         fn handleKeyEvents(
-            self: *PollEventsSystem,
+            self: *EventPollingSystem,
             window: *WindowComponent,
             registry: *pecs.Registry,
         ) !void {
             // set modifier values
-            var modifiers: Modifier.Type = 0;
-            if (glfw.getKey(window.handle, glfw.KeyLeftShift) == glfw.Press) {
-                modifiers = modifiers | Modifier.LEFT_SHIFT;
-            }
-            if (glfw.getKey(window.handle, glfw.KeyRightShift) == glfw.Press) {
-                modifiers = modifiers | Modifier.RIGHT_SHIFT;
+            var modifiers: Modifier.Type = Modifier.NONE;
+            if (c.glfwGetKey(window.handle, c.GLFW_KEY_LEFT_SHIFT) == c.GLFW_PRESS or
+                c.glfwGetKey(window.handle, c.GLFW_KEY_RIGHT_SHIFT) == c.GLFW_PRESS)
+            {
+                modifiers = modifiers | Modifier.SHIFT;
             }
 
             // push key events
             for (std.enums.values(Key)) |key| {
-                const glfw_key = @intFromEnum(key);
+                const glfw_key: c_int = @intFromEnum(key);
 
-                if (glfw.getKey(window.handle, glfw_key) == glfw.Press) {
-                    var ev = Event{ .keyEvent = .{
-                        .key = key,
-                        .state = .Pressed,
-                        .window_id = window.id,
-                        .modifiers = modifiers,
-                    } };
+                if (c.glfwGetKey(window.handle, glfw_key) == c.GLFW_PRESS) {
+                    var ev = Event{
+                        .keyEvent = .{
+                            .key = key,
+                            .state = .Pressed,
+                            .window_id = window.id,
+                            .modifiers = modifiers,
+                        },
+                    };
 
                     const key_info = KeyInfo{ .key = key, .window_id = window.id };
                     if (self.last_key_events.get(key_info)) |state| {
@@ -186,7 +178,7 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
                     try registry.pushResource(ev);
                 }
 
-                if (glfw.getKey(window.handle, glfw_key) == glfw.Release) {
+                if (c.glfwGetKey(window.handle, glfw_key) == c.GLFW_RELEASE) {
                     var ev = Event{ .keyEvent = .{
                         .key = key,
                         .state = .Released,
@@ -208,14 +200,14 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
         }
     };
 
-    const DestroyWindowSystem = struct {
-        pub fn init(_: std.mem.Allocator) anyerror!DestroyWindowSystem {
-            return DestroyWindowSystem{};
+    const WindowDestructionSystem = struct {
+        pub fn init(_: std.mem.Allocator) anyerror!WindowDestructionSystem {
+            return WindowDestructionSystem{};
         }
 
-        pub fn deinit(_: *DestroyWindowSystem) void {}
+        pub fn deinit(_: *WindowDestructionSystem) void {}
 
-        pub fn process(_: *DestroyWindowSystem, registry: *pecs.Registry) anyerror!void {
+        pub fn process(_: *WindowDestructionSystem, registry: *pecs.Registry) anyerror!void {
             var messages = try registry.queryResource(Message);
             while (messages.next()) |message| {
                 switch (message) {
@@ -226,7 +218,7 @@ pub const WindowPlugin = pecs.Plugin.init("window", struct {
                             const window = entity.get(WindowComponent).?;
                             if (window.id == window_id) {
                                 log.debug("found window, closing (id = {d})!", .{message.CloseWindow});
-                                glfw.setWindowShouldClose(window.handle, true);
+                                c.glfwSetWindowShouldClose(window.handle, 1);
                             }
                         }
                     },

@@ -1,12 +1,12 @@
-const glfw = @import("glfw");
+const c = @cImport(@cInclude("GLFW/glfw3.h"));
 
 const WindowID = @import("window.zig").WindowID;
 
 pub const Modifier = struct {
-    pub const Type = u32;
+    pub const Type = c_int;
 
-    pub const LEFT_SHIFT = 0b0001;
-    pub const RIGHT_SHIFT = 0b0010;
+    pub const NONE = 0;
+    pub const SHIFT = c.GLFW_MOD_SHIFT;
 };
 
 /// For communication outward.
@@ -17,14 +17,14 @@ pub const Event = union(enum) {
 
         /// Originating window.
         window_id: WindowID,
-        modifiers: Modifier.Type = 0,
+        modifiers: Modifier.Type = Modifier.NONE,
     },
 };
 
-pub const Key = enum(glfw.Key) {
-    Escape = glfw.KeyEscape,
-    Enter = glfw.KeyEnter,
-    Space = glfw.KeySpace,
+pub const Key = enum(c_int) {
+    Escape = c.GLFW_KEY_ESCAPE,
+    Enter = c.GLFW_KEY_ENTER,
+    Space = c.GLFW_KEY_SPACE,
 };
 
 pub const KeyState = enum {

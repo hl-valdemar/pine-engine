@@ -1,13 +1,12 @@
-const pecs = @import("pecs");
-const glfw = @import("glfw");
-const log = @import("log.zig");
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const Schedule = @import("schedule.zig").Schedule;
+const pecs = @import("pecs");
+
 const Event = @import("event.zig").Event;
+const log = @import("log.zig");
 const Message = @import("message.zig").Message;
+const Schedule = @import("schedule.zig").Schedule;
 
 /// Config with sensible defaults for the app.
 pub const AppDesc = struct {
@@ -32,8 +31,6 @@ pub const App = struct {
         try app.registerResource(Event);
         try app.registerResource(Message);
 
-        // try app.registerSystem(MessageHandlerSystem, .PostUpdate);
-
         return app;
     }
 
@@ -52,10 +49,11 @@ pub const App = struct {
             };
         }
 
-        // run an update loop if any update systems are registered
+        // run an update/render loop if any update systems are registered
         if (self.systemRegistered(.PreUpdate) or
             self.systemRegistered(.Update) or
-            self.systemRegistered(.PostUpdate))
+            self.systemRegistered(.PostUpdate) or
+            self.systemRegistered(.Render))
         {
             var first = self.registry.queryResource(Message) catch unreachable; // Message should always be registered!
             defer first.deinit();
@@ -83,6 +81,13 @@ pub const App = struct {
                 if (self.systemRegistered(.PostUpdate)) {
                     self.processSystems(.PostUpdate) catch |err| {
                         log.err(system_process_err_fmt, .{ Schedule.PostUpdate.toString(), err });
+                    };
+                }
+
+                // render the frame
+                if (self.systemRegistered(.Render)) {
+                    self.processSystems(.Render) catch |err| {
+                        log.err(system_process_err_fmt, .{ Schedule.Render.toString(), err });
                     };
                 }
 
