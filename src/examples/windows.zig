@@ -19,7 +19,7 @@ pub fn main() !void {
 
     // add the window plugin
     try app.addPlugin(pine.WindowPlugin);
-    // try app.addPlugin(pine.RenderPlugin);
+    try app.addPlugin(pine.RenderPlugin);
 
     // register systems
     try app.registerSystem(SetupSystem, .Init);
