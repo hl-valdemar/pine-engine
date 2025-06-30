@@ -11,4 +11,4 @@ Utilizes various other pine-based modules, including:
 
 These modules are disjoint from each other and can be used on their own.
 
--- Built on simple pine and Zig
+-- Built on Zig and simple pine
