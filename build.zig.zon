@@ -40,6 +40,14 @@
             .url = "git+https://github.com/griush/zm#27ee118800e6ee0804499d053a54100beb579bf3",
             .hash = "zm-0.3.0-cLX-WY3PAABvjPwxqDx9GZkMixyyrlHueLZTxpGy3kLE",
         },
+        .pine_frame = .{
+            .url = "git+https://github.com/hl-valdemar/pine-frame#e7f3371a1454cc4dfc8fd720dd0446d680cadd64",
+            .hash = "pine_frame-0.0.0-Y5jKRSSrAABsFMXLyzPPtBcez7DEyYxVP4p3fTjEDrpP",
+        },
+        .pine_ecs = .{
+            .url = "git+https://github.com/hl-valdemar/pine-ecs#5e524303ee3260f0078350ee4bcfc1451e73bc5f",
+            .hash = "pine_ecs-0.1.2-4KYRKPw6AQB51plsPQMdh5yYBe1g6Eoh6YkAN0bZJ2DA",
+        },
     },
     .paths = .{
         "build.zig",

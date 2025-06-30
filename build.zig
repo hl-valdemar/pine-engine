@@ -4,11 +4,11 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const ecs_dep = b.dependency("pine-ecs", .{
+    const ecs_dep = b.dependency("pine_ecs", .{
         .target = target,
         .optimize = optimize,
     });
-    const frame_dep = b.dependency("pine-frame", .{
+    const frame_dep = b.dependency("pine_frame", .{
         .target = target,
         .optimize = optimize,
     });
