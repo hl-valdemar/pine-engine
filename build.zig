@@ -8,7 +8,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
-    const win_dep = b.dependency("pine-window", .{
+    const frame_dep = b.dependency("pine-frame", .{
         .target = target,
         .optimize = optimize,
     });
@@ -18,31 +18,29 @@ pub fn build(b: *std.Build) !void {
     });
 
     // create the library module
-    const lib_mod = b.createModule(.{
+    const pine_lib_mod = b.createModule(.{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    lib_mod.addImport("pine-ecs", ecs_dep.module("pine-ecs"));
-    lib_mod.addImport("pine-window", win_dep.module("pine-window"));
-    lib_mod.addImport("zm", zm_dep.module("zm"));
+    pine_lib_mod.addImport("pine-ecs", ecs_dep.module("pine-ecs"));
+    pine_lib_mod.addImport("pine-window", frame_dep.module("pine-window"));
+    pine_lib_mod.addImport("pine-graphics", frame_dep.module("pine-graphics"));
+    pine_lib_mod.addImport("zm", zm_dep.module("zm"));
 
     // create static library
-    const lib = b.addLibrary(.{
+    const pine_lib = b.addLibrary(.{
         .linkage = .static,
         .name = "pine-engine",
-        .root_module = lib_mod,
+        .root_module = pine_lib_mod,
     });
 
-    lib.linkSystemLibrary("glfw");
-    lib.linkSystemLibrary("glfw3");
-
-    b.installArtifact(lib);
+    b.installArtifact(pine_lib);
 
     // tests steps
     const lib_unit_tests = b.addTest(.{
-        .root_module = lib_mod,
+        .root_module = pine_lib_mod,
     });
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
@@ -52,7 +50,7 @@ pub fn build(b: *std.Build) !void {
 
     // doc steps
     const install_docs = b.addInstallDirectory(.{
-        .source_dir = lib.getEmittedDocs(),
+        .source_dir = pine_lib.getEmittedDocs(),
         .install_dir = .prefix,
         .install_subdir = "docs",
     });
@@ -75,7 +73,7 @@ pub fn build(b: *std.Build) !void {
             .optimize = optimize,
         });
 
-        exe_mod.addImport("pine-engine", lib_mod);
+        exe_mod.addImport("pine-engine", pine_lib_mod);
 
         // extract name
         var words = std.mem.splitAny(u8, file.name, ".");
