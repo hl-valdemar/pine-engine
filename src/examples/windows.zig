@@ -42,15 +42,12 @@ const SetupSystem = struct {
 
     pub fn process(self: *SetupSystem, registry: *ecs.Registry) anyerror!void {
         // create the window component
-        var window = try pine.WindowComponent.init(
-            self.allocator,
-            .{
-                .width = 500,
-                .height = 500,
-                .position = .{ .center = true },
-                .title = "Pine Engine # Window Example",
-            },
-        );
+        var window = try pine.WindowComponent.init(self.allocator, .{
+            .width = 500,
+            .height = 500,
+            .position = .{ .center = true },
+            .title = "Pine Engine # Window Example",
+        });
 
         // create the render target
         const render_target = try pine.RenderTargetComponent.init(&window.handle, .{
@@ -156,15 +153,12 @@ const InputSystem = struct {
                                 const y = rand.intRangeAtMost(u16, 250, 750);
 
                                 // create the window
-                                var window = try pine.WindowComponent.init(
-                                    self.allocator,
-                                    .{
-                                        .width = width,
-                                        .height = height,
-                                        .position = .{ .x = x, .y = y },
-                                        .title = "Pine Engine # Window Example",
-                                    },
-                                );
+                                var window = try pine.WindowComponent.init(self.allocator, .{
+                                    .width = width,
+                                    .height = height,
+                                    .position = .{ .x = x, .y = y },
+                                    .title = "Pine Engine # Window Example",
+                                });
 
                                 // create the render target
                                 const render_target = try pine.RenderTargetComponent.init(&window.handle, .{
