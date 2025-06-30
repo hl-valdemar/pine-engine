@@ -22,15 +22,15 @@ pub const WindowEvent = @import("engine/window.zig").WindowEvent;
 
 // components
 pub const WindowComponent = @import("engine/window.zig").WindowComponent;
+pub const RenderTargetComponent = renderer.RenderTargetComponent;
 
 // plugins
 pub const WindowPlugin = @import("engine/window.zig").WindowPlugin;
 pub const RenderPlugin = renderer.RenderPlugin;
-
-pub const renderer = @import("engine/renderer.zig");
 
 //-- private imports --//
 
 const std = @import("std");
 const app = @import("engine/app.zig");
 const message = @import("engine/message.zig");
+const renderer = @import("engine/renderer.zig");

@@ -3,7 +3,6 @@ const Allocator = std.mem.Allocator;
 
 const pine = @import("pine-engine");
 const ecs = pine.ecs;
-const pg = pine.graphics;
 
 pub const std_options = std.Options{
     .logFn = pine.log.logFn,
@@ -42,33 +41,22 @@ const SetupSystem = struct {
     pub fn deinit(_: *SetupSystem) void {}
 
     pub fn process(self: *SetupSystem, registry: *ecs.Registry) anyerror!void {
-        // Get the global graphics context
-        const ctx_resource = try registry.querySingleResource(self.allocator, pg.GraphicsContext);
-        defer self.allocator.destroy(ctx_resource);
+        // create the window component
+        const window = try pine.WindowComponent.init(
+            self.allocator,
+            .{
+                .width = 500,
+                .height = 500,
+                .position = .{ .center = true },
+                .title = "Pine Engine # Window Example",
+            },
+        );
 
-        if (ctx_resource.*) |*ctx| {
-            // Create window
-            var window = try pine.WindowComponent.init(
-                self.allocator,
-                .{
-                    .width = 500,
-                    .height = 500,
-                    .position = .{ .center = true },
-                    .title = "Pine Engine # Window Example",
-                },
-            );
-
-            // Create swapchain using the global context
-            const swapchain = try pg.Swapchain.create(ctx, &window.handle);
-
-            const render_target = pine.renderer.RenderTarget{
-                .swapchain = swapchain,
-            };
-
-            _ = try registry.spawn(.{ window, render_target });
-        } else {
-            return error.NoGraphicsContext;
-        }
+        // spawn the window entity
+        _ = try registry.spawn(.{
+            window,
+            pine.RenderTargetComponent{}, // note that it's a render target
+        });
     }
 };
 
@@ -107,9 +95,13 @@ const InputSystem = struct {
                         .escape => {
                             if (event.key_up.mods.shift) {
                                 std.log.debug("shift+escape was 'just' released, shutting down! [{any}]", .{event});
+
+                                // push the shutdown request to the registry
                                 try registry.pushResource(pine.Message{ .shutdown = .requested });
                             } else if (!event.key_up.is_repeat) { // just escape -> close active window
                                 std.log.debug("escape was 'just' released, closing window! [{any}]", .{event});
+
+                                // push a close window request to the registry
                                 try registry.pushResource(pine.Message{
                                     .close_window = event.key_up.window_id,
                                 });
@@ -123,6 +115,7 @@ const InputSystem = struct {
                                 const width = rand.intRangeAtMost(u16, 250, 750);
                                 const height = rand.intRangeAtMost(u16, 250, 750);
 
+                                // why not make the position random as well
                                 const x = rand.intRangeAtMost(u16, 250, 750);
                                 const y = rand.intRangeAtMost(u16, 250, 750);
 
@@ -138,7 +131,10 @@ const InputSystem = struct {
                                 );
 
                                 // spawn the window as an entity to be managed by the ecs
-                                _ = try registry.spawn(.{window});
+                                _ = try registry.spawn(.{
+                                    window,
+                                    pine.RenderTargetComponent{},
+                                });
                             }
                         },
                         else => {},
