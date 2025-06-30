@@ -19,11 +19,11 @@ pub fn main() !void {
 
     // add the window plugin
     try app.addPlugin(pine.WindowPlugin);
-    try app.addPlugin(pine.RenderPlugin);
 
     // register systems
     try app.registerSystem(SetupSystem, .Init);
     try app.registerSystem(InputSystem, .Update);
+    try app.registerSystem(UpdateClearColorSystem, .Update);
 
     // fire off the app
     try app.run();
@@ -42,7 +42,7 @@ const SetupSystem = struct {
 
     pub fn process(self: *SetupSystem, registry: *ecs.Registry) anyerror!void {
         // create the window component
-        const window = try pine.WindowComponent.init(
+        var window = try pine.WindowComponent.init(
             self.allocator,
             .{
                 .width = 500,
@@ -52,11 +52,47 @@ const SetupSystem = struct {
             },
         );
 
-        // spawn the window entity
-        _ = try registry.spawn(.{
-            window,
-            pine.RenderTargetComponent{}, // note that it's a render target
+        // create the render target
+        const render_target = try pine.RenderTargetComponent.init(&window.handle, .{
+            .clear_color = .{ .r = 0.9, .g = 0.3, .b = 0.3, .a = 1.0 },
         });
+
+        // spawn the window entity
+        _ = try registry.spawn(.{ window, render_target });
+    }
+};
+
+/// This system updates the clear color of the windows.
+/// It'll be registered to run on the .Update schedule, querying frame count on each update cycle.
+const UpdateClearColorSystem = struct {
+    allocator: Allocator,
+
+    pub fn init(allocator: Allocator) anyerror!UpdateClearColorSystem {
+        return UpdateClearColorSystem{ .allocator = allocator };
+    }
+
+    pub fn deinit(_: *UpdateClearColorSystem) void {}
+
+    pub fn process(self: *UpdateClearColorSystem, registry: *ecs.Registry) anyerror!void {
+        // query just a single resource
+        const frame_count = try registry.querySingleResource(self.allocator, pine.FrameCount);
+        defer self.allocator.destroy(frame_count); // note: we must deallocate this copy manually
+
+        // update the clear color accordingly for all render targets
+        if (frame_count.*) |count| {
+            var renderables = try registry.queryComponents(.{pine.RenderTargetComponent});
+            while (renderables.next()) |entity| {
+                const target = entity.get(pine.RenderTargetComponent).?;
+                target.clear_color.r = @sin(@as(f32, @floatFromInt(count.value)) * 0.01) * 0.5 + 0.5;
+            }
+        }
+
+        // // log frame time
+        // const frame_time = try registry.querySingleResource(self.allocator, pine.FrameTime);
+        // defer self.allocator.destroy(frame_time);
+        // if (frame_time.*) |dt| {
+        //     std.log.debug("Frame time: {d}", .{dt.value});
+        // }
     }
 };
 
@@ -120,7 +156,7 @@ const InputSystem = struct {
                                 const y = rand.intRangeAtMost(u16, 250, 750);
 
                                 // create the window
-                                const window = try pine.WindowComponent.init(
+                                var window = try pine.WindowComponent.init(
                                     self.allocator,
                                     .{
                                         .width = width,
@@ -130,11 +166,13 @@ const InputSystem = struct {
                                     },
                                 );
 
-                                // spawn the window as an entity to be managed by the ecs
-                                _ = try registry.spawn(.{
-                                    window,
-                                    pine.RenderTargetComponent{},
+                                // create the render target
+                                const render_target = try pine.RenderTargetComponent.init(&window.handle, .{
+                                    .clear_color = .{ .r = 0.9, .g = 0.3, .b = 0.3, .a = 1.0 },
                                 });
+
+                                // spawn the window as an entity to be managed by the ecs
+                                _ = try registry.spawn(.{ window, render_target });
                             }
                         },
                         else => {},

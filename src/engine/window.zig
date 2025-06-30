@@ -8,6 +8,7 @@ const pg = @import("pine-graphics");
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
 const Schedule = @import("schedule.zig").Schedule;
+const RenderPlugin = @import("renderer.zig").RenderPlugin;
 
 pub const WindowEvent = pw.Event;
 
@@ -36,6 +37,9 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         try registry.registerTaggedSystem(EventPollingSystem, Schedule.PreUpdate.toString());
         try registry.registerTaggedSystem(WindowDestructionSystem, Schedule.PostUpdate.toString());
         try registry.registerTaggedSystem(CleanupSystem, Schedule.Deinit.toString());
+
+        // add the render plugin
+        try registry.addPlugin(RenderPlugin);
     }
 
     const EventPollingSystem = struct {
@@ -123,6 +127,7 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
                 const window = entity.get(WindowComponent).?;
                 window.handle.destroy();
             }
+            // FIX: maybe we should also destroy the corresponding swapchains?
         }
     };
 }.init);

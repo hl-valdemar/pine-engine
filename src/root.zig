@@ -16,9 +16,12 @@ pub const window = @import("pine-window");
 pub const App = app.App;
 pub const AppDesc = app.AppDesc;
 pub const Message = message.Message;
+pub const Color = renderer.Color;
 
 // resources
 pub const WindowEvent = @import("engine/window.zig").WindowEvent;
+pub const FrameCount = renderer.FrameCount;
+pub const FrameTime = renderer.FrameTime;
 
 // components
 pub const WindowComponent = @import("engine/window.zig").WindowComponent;
