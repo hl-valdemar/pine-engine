@@ -104,7 +104,7 @@ const InputSystem = struct {
                                 const window = try pine.WindowComponent.init(.{
                                     .width = width,
                                     .height = height,
-                                    .title = "This will not be visible for long!",
+                                    .title = "Pine Engine # Window Example",
                                 });
 
                                 // spawn the window as an entity to be managed by the ecs
