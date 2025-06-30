@@ -6,8 +6,8 @@ To build and run the examples, simply run `zig build <example>` in your favorite
 
 Utilizes various other pine-based modules, including:
 
-- Pine ECS: [](https://github.com/hl-valdemar/pine-ecs)
-- Pine Frame: [](https://github.com/hl-valdemar/pine-frame)
+- Pine ECS: [https://github.com/hl-valdemar/pine-ecs](https://github.com/hl-valdemar/pine-ecs)
+- Pine Frame: [https://github.com/hl-valdemar/pine-ecs](https://github.com/hl-valdemar/pine-frame)
 
 These modules are disjoint from each other and can be used on their own.
 
