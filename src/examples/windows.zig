@@ -97,7 +97,8 @@ const InputSystem = struct {
                                 std.log.debug("enter was 'just' released, spawning window! [{any}]", .{event});
 
                                 // random width and height for endless fun
-                                const width, const height = computeWindowSize(rand);
+                                const width = rand.intRangeAtMost(u16, 250, 750);
+                                const height = rand.intRangeAtMost(u16, 250, 750);
 
                                 // create the window
                                 const window = try pine.WindowComponent.init(.{
@@ -118,10 +119,3 @@ const InputSystem = struct {
         }
     }
 };
-
-// utility function, just ignore
-fn computeWindowSize(rand: std.Random) struct { u16, u16 } {
-    const width = rand.intRangeAtMost(u16, 250, 750);
-    const height = rand.intRangeAtMost(u16, 250, 750);
-    return .{ width, height };
-}
