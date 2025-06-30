@@ -42,35 +42,33 @@ const SetupSystem = struct {
     pub fn deinit(_: *SetupSystem) void {}
 
     pub fn process(self: *SetupSystem, registry: *ecs.Registry) anyerror!void {
-        // create the window component
-        var window = try pine.WindowComponent.init(
-            self.allocator,
-            .{
-                .width = 500,
-                .height = 500,
-                .position = .{ .center = true },
-                .title = "Pine Engine # Window Example",
-            },
-        );
+        // Get the global graphics context
+        const ctx_resource = try registry.querySingleResource(self.allocator, pg.GraphicsContext);
+        defer self.allocator.destroy(ctx_resource);
 
-        var graphics_ctx = try pg.GraphicsContext.create(.auto);
+        if (ctx_resource.*) |*ctx| {
+            // Create window
+            var window = try pine.WindowComponent.init(
+                self.allocator,
+                .{
+                    .width = 500,
+                    .height = 500,
+                    .position = .{ .center = true },
+                    .title = "Pine Engine # Window Example",
+                },
+            );
 
-        // query and log graphics capabilities
-        const caps = graphics_ctx.getCapabilities();
-        std.log.info("graphics backend capabilities:", .{});
-        std.log.info("  - compute shaders: {}", .{caps.compute_shaders});
-        std.log.info("  - tessellation: {}", .{caps.tessellation});
-        std.log.info("  - max texture size: {}", .{caps.max_texture_size});
+            // Create swapchain using the global context
+            const swapchain = try pg.Swapchain.create(ctx, &window.handle);
 
-        const swapchain = try pg.Swapchain.create(&graphics_ctx, &window.handle);
+            const render_target = pine.renderer.RenderTarget{
+                .swapchain = swapchain,
+            };
 
-        const render_target = pine.renderer.RenderTarget{
-            .context = graphics_ctx,
-            .swapchain = swapchain,
-        };
-
-        // spawn the window entity
-        _ = try registry.spawn(.{ window, render_target });
+            _ = try registry.spawn(.{ window, render_target });
+        } else {
+            return error.NoGraphicsContext;
+        }
     }
 };
 

@@ -8,12 +8,17 @@ const Schedule = @import("schedule.zig").Schedule;
 const WindowComponent = @import("window.zig").WindowComponent;
 
 pub const RenderTarget = struct {
-    context: pg.GraphicsContext,
     swapchain: pg.Swapchain,
 };
 
 pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
     fn init(registry: *ecs.Registry) anyerror!void {
+        try registry.registerResource(pg.GraphicsContext);
+
+        // create and store the single graphics context
+        const ctx = try pg.GraphicsContext.create(.auto);
+        try registry.pushResource(ctx);
+
         try registry.registerTaggedSystem(RenderSystem, Schedule.Render.toString());
         try registry.registerTaggedSystem(CleanupSystem, Schedule.Deinit.toString());
     }
@@ -58,18 +63,25 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
     };
 
     const CleanupSystem = struct {
-        pub fn init(_: Allocator) anyerror!CleanupSystem {
-            return CleanupSystem{};
+        allocator: Allocator,
+
+        pub fn init(allocator: Allocator) anyerror!CleanupSystem {
+            return CleanupSystem{ .allocator = allocator };
         }
 
         pub fn deinit(_: *CleanupSystem) void {}
 
-        pub fn process(_: *CleanupSystem, registry: *ecs.Registry) anyerror!void {
+        pub fn process(self: *CleanupSystem, registry: *ecs.Registry) anyerror!void {
             var render_targets = try registry.queryComponents(.{RenderTarget});
             while (render_targets.next()) |entity| {
                 const target = entity.get(RenderTarget).?;
-                target.context.destroy();
                 target.swapchain.destroy();
+            }
+
+            const ctx_resource = try registry.querySingleResource(self.allocator, pg.GraphicsContext);
+            defer self.allocator.destroy(ctx_resource);
+            if (ctx_resource.*) |*ctx| {
+                ctx.destroy();
             }
         }
     };
