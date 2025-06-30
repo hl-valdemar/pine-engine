@@ -36,17 +36,17 @@
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
     .dependencies = .{
-        .sokol = .{
-            .url = "git+https://github.com/floooh/sokol-zig.git#baf79f2016fd947036b21cc0771fbeaacaa9e4ba",
-            .hash = "sokol-0.1.0-pb1HK0yHLAAp0QKI76BDMpoCCRA-QkhgU4-1Ir1i0A5b",
+        .@"pine-ecs" = .{
+            .url = "git+https://github.com/hl-valdemar/pine-ecs#cfe803caf4b5fe1bb59bc3cc644ddaebfc1803b4",
+            .hash = "pine_ecs-0.1.1-4KYRKPw6AQB5rHHnBjjDWPde1siKJFHvomgpLN9YIMEX",
         },
-        .pecs = .{
-            .url = "git+https://github.com/hl-valdemar/pine-ecs#aeee2177374f0f2cebdf2e924c62beb2a750c15e",
-            .hash = "pine_ecs-0.1.1-4KYRKFlHAQCYrkuAUmcdkOTXkRP_xt135-LlpwQs3Qfm",
+        .@"pine-window" = .{
+            .url = "git+https://github.com/hl-valdemar/pine-window#8b3c04989e43f4a806d8a57426644675af3f632a",
+            .hash = "pine_window-0.0.0-bOVd2Jp9AADaCa6h48o83OGtnLNJ_xehoMalNChrh8FL",
         },
         .zm = .{
-            .url = "git+https://github.com/griush/zm#d3b2d90f9a1818f167abca40b7b708f9e9765638",
-            .hash = "zm-0.3.0-cLX-WbfMAAAlqyfozvJsnhWlHO1MdlkVajyEDi6OISgO",
+            .url = "git+https://github.com/griush/zm#27ee118800e6ee0804499d053a54100beb579bf3",
+            .hash = "zm-0.3.0-cLX-WY3PAABvjPwxqDx9GZkMixyyrlHueLZTxpGy3kLE",
         },
     },
     .paths = .{

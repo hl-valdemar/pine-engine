@@ -3,6 +3,9 @@ pub const Schedule = enum {
     /// Run once on app initialization.
     Init,
 
+    /// Run once on app initialization (after Init).
+    PostInit,
+
     /// Run once on app deinitialization.
     Deinit,
 

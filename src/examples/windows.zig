@@ -1,8 +1,8 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const pine = @import("pine");
-const pecs = pine.ecs;
+const pine = @import("pine-engine");
+const ecs = pine.ecs;
 
 pub const std_options = std.Options{
     .logFn = pine.log.logFn,
@@ -19,6 +19,7 @@ pub fn main() !void {
 
     // add the window plugin
     try app.addPlugin(pine.WindowPlugin);
+    // try app.addPlugin(pine.RenderPlugin);
 
     // register systems
     try app.registerSystem(SetupSystem, .Init);
@@ -68,7 +69,7 @@ const InputSystem = struct {
 
     pub fn deinit(_: *InputSystem) void {}
 
-    pub fn process(self: *InputSystem, registry: *pecs.Registry) anyerror!void {
+    pub fn process(self: *InputSystem, registry: *ecs.Registry) anyerror!void {
         // get random values
         const rand = self.prng.random();
 
@@ -77,54 +78,58 @@ const InputSystem = struct {
 
         // react accordingly
         while (events.next()) |event| {
-            if (event.keyEvent.state == .JustReleased) {
-                switch (event.keyEvent.key) {
-                    .Escape => {
-                        // escape + right shift -> stop the program
-                        if (event.keyEvent.modifiers & pine.Modifier.SHIFT != 0) {
-                            std.log.debug("shift+escape was 'just' released, shutting down! [{any}]", .{event});
-                            try registry.pushResource(pine.Message{
-                                .Shutdown = .Requested,
-                            });
-                        } else { // just escape -> close active window
-                            std.log.debug("escape was 'just' released, closing window! [{any}]", .{event});
-                            try registry.pushResource(pine.Message{
-                                .CloseWindow = event.keyEvent.window_id,
-                            });
-                        }
-                    },
-                    .Enter => { // spawn a new window on enter
-                        std.log.debug("enter was 'just' released, spawning window! [{any}]", .{event});
+            switch (event) {
+                .window_event => {
+                    switch (event.window_event) {
+                        .key_up => {
+                            switch (event.window_event.key_up.key) {
+                                .escape => {
+                                    if (event.window_event.key_up.mods.shift) {
+                                        std.log.debug("shift+escape was 'just' released, shutting down! [{any}]", .{event});
+                                        try registry.pushResource(pine.Message{ .shutdown = .requested });
+                                    } else if (!event.window_event.key_up.is_repeat) { // just escape -> close active window
+                                        std.log.debug("escape was 'just' released, closing window! [{any}]", .{event});
+                                        try registry.pushResource(pine.Message{
+                                            .close_window = event.window_event.key_up.window_id,
+                                        });
+                                    }
+                                },
+                                .enter => { // spawn a new window on enter
+                                    if (!event.window_event.key_up.is_repeat) {
+                                        std.log.debug("enter was 'just' released, spawning window! [{any}]", .{event});
 
-                        // random width and height for endless fun
-                        const width, const height = computeWindowSize(rand);
+                                        // random width and height for endless fun
+                                        const width, const height = computeWindowSize(rand);
+                                        // random position
+                                        // const x, const y = computeWindowPosition(rand);
 
-                        // random position
-                        const x, const y = computeWindowPosition(rand);
+                                        // create the window
+                                        const window = try pine.WindowComponent.init(.{
+                                            .width = width,
+                                            .height = height,
+                                            .title = "This will not be visible for long!",
+                                        });
 
-                        // create the window
-                        var window = try pine.WindowComponent.init(.{
-                            .width = width,
-                            .height = height,
-                            .title = "This will not be visible for long!",
-                            .position = .{ .x = x, .y = y },
-                        });
+                                        // // the window component comes with some utility functions for setting certain traits
+                                        // window.setTitle("Pine Engine # Extra Window!");
 
-                        // the window component comes with some utility functions for setting certain traits
-                        window.setTitle("Pine Engine # Extra Window!");
-
-                        // spawn the window as an entity to be managed by the ecs
-                        _ = try registry.spawn(.{window});
-                    },
-                    else => {},
-                }
+                                        // spawn the window as an entity to be managed by the ecs
+                                        _ = try registry.spawn(.{window});
+                                    }
+                                },
+                                else => {},
+                            }
+                        },
+                        else => {},
+                    }
+                },
             }
         }
     }
 };
 
-// utility import
-const c = @cImport(@cInclude("GLFW/glfw3.h"));
+// // utility import
+// const c = @cImport(@cInclude("GLFW/glfw3.h"));
 
 // utility function, just ignore
 fn computeWindowSize(rand: std.Random) struct { u16, u16 } {
@@ -133,26 +138,26 @@ fn computeWindowSize(rand: std.Random) struct { u16, u16 } {
     return .{ width, height };
 }
 
-// utility function, just ignore
-fn computeWindowPosition(rand: std.Random) struct { u16, u16 } {
-    // const monitor = glfw.getPrimaryMonitor();
-    const monitor = c.glfwGetPrimaryMonitor();
-
-    var width_physical: c_int = undefined;
-    var height_physical: c_int = undefined;
-    // glfw.getMonitorPhysicalSize(monitor, &width_physical, &height_physical);
-    c.glfwGetMonitorPhysicalSize(monitor, &width_physical, &height_physical);
-
-    var x_scale: f32 = undefined;
-    var y_scale: f32 = undefined;
-    // glfw.getMonitorContentScale(monitor, &x_scale, &y_scale);
-    c.glfwGetMonitorContentScale(monitor, &x_scale, &y_scale);
-
-    const width_logical: u16 = @intFromFloat(@as(f32, @floatFromInt(width_physical)) * x_scale);
-    const height_logical: u16 = @intFromFloat(@as(f32, @floatFromInt(height_physical)) * y_scale);
-
-    const x = rand.intRangeAtMost(u16, 0, width_logical);
-    const y = rand.intRangeAtMost(u16, 0, height_logical);
-
-    return .{ x, y };
-}
+// // utility function, just ignore
+// fn computeWindowPosition(rand: std.Random) struct { u16, u16 } {
+//     // const monitor = glfw.getPrimaryMonitor();
+//     const monitor = c.glfwGetPrimaryMonitor();
+//
+//     var width_physical: c_int = undefined;
+//     var height_physical: c_int = undefined;
+//     // glfw.getMonitorPhysicalSize(monitor, &width_physical, &height_physical);
+//     c.glfwGetMonitorPhysicalSize(monitor, &width_physical, &height_physical);
+//
+//     var x_scale: f32 = undefined;
+//     var y_scale: f32 = undefined;
+//     // glfw.getMonitorContentScale(monitor, &x_scale, &y_scale);
+//     c.glfwGetMonitorContentScale(monitor, &x_scale, &y_scale);
+//
+//     const width_logical: u16 = @intFromFloat(@as(f32, @floatFromInt(width_physical)) * x_scale);
+//     const height_logical: u16 = @intFromFloat(@as(f32, @floatFromInt(height_physical)) * y_scale);
+//
+//     const x = rand.intRangeAtMost(u16, 0, width_logical);
+//     const y = rand.intRangeAtMost(u16, 0, height_logical);
+//
+//     return .{ x, y };
+// }

@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const pecs = @import("pecs");
+const ecs = @import("pine-ecs");
 
 const Event = @import("event.zig").Event;
 const log = @import("log.zig");
@@ -17,13 +17,13 @@ pub const AppDesc = struct {
 pub const App = struct {
     allocator: Allocator,
     config: AppDesc,
-    registry: pecs.Registry,
+    registry: ecs.Registry,
 
     pub fn init(allocator: Allocator, config: AppDesc) !App {
         var app = App{
             .allocator = allocator,
             .config = config,
-            .registry = try pecs.Registry.init(allocator, .{
+            .registry = try ecs.Registry.init(allocator, .{
                 .remove_empty_archetypes = config.remove_empty_archetypes,
             }),
         };
@@ -48,6 +48,11 @@ pub const App = struct {
                 log.warn(system_process_err_fmt, .{ Schedule.Init.toString(), err });
             };
         }
+        if (self.systemRegistered(.PostInit)) {
+            self.processSystems(.PostInit) catch |err| {
+                log.warn(system_process_err_fmt, .{ Schedule.PostInit.toString(), err });
+            };
+        }
 
         // run an update/render loop if any update systems are registered
         if (self.systemRegistered(.PreUpdate) or
@@ -62,7 +67,7 @@ pub const App = struct {
             defer self.allocator.destroy(message_ptr);
             message_ptr.* = first.next();
 
-            while (message_ptr.* == null or message_ptr.*.? != Message.Shutdown) {
+            while (message_ptr.* == null or message_ptr.*.? != Message.shutdown) {
                 // note: system events may be generated here
                 if (self.systemRegistered(.PreUpdate)) {
                     self.processSystems(.PreUpdate) catch |err| {
@@ -122,7 +127,7 @@ pub const App = struct {
     ///     Health{ .current = 3, .max = 5 },
     /// });
     /// ```
-    pub fn spawn(self: *App, components: anytype) !pecs.EntityID {
+    pub fn spawn(self: *App, components: anytype) !ecs.EntityID {
         return try self.registry.spawn(components);
     }
 
@@ -160,7 +165,7 @@ pub const App = struct {
     ///
     /// app.addPlugin(HealthPlugin);
     /// ```
-    pub fn addPlugin(self: *App, plugin: pecs.Plugin) !void {
+    pub fn addPlugin(self: *App, plugin: ecs.Plugin) !void {
         try self.registry.addPlugin(plugin);
     }
 
