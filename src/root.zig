@@ -6,7 +6,7 @@ pub const std_options = std.Options{
 
 //-- public exports --//
 
-pub const log = @import("pine/log.zig");
+pub const log = @import("engine/log.zig");
 
 // bundle pine-ecs with the pine engine
 pub const ecs = @import("pine-ecs");
@@ -24,7 +24,7 @@ pub const RenderPlugin = renderer.RenderPlugin;
 //-- private imports --//
 
 const std = @import("std");
-const app = @import("pine/app.zig");
-const message = @import("pine/message.zig");
-const window = @import("pine/window.zig");
-const renderer = @import("pine/renderer.zig");
+const app = @import("engine/app.zig");
+const message = @import("engine/message.zig");
+const window = @import("engine/window.zig");
+const renderer = @import("engine/renderer.zig");
