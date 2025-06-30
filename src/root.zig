@@ -13,9 +13,6 @@ pub const ecs = @import("pine-ecs");
 
 pub const App = app.App;
 pub const AppDesc = app.AppDesc;
-pub const Key = event.Key;
-pub const KeyState = event.KeyState;
-pub const Modifier = event.Modifier;
 pub const Message = message.Message;
 
 pub const WindowComponent = window.WindowComponent;
@@ -28,7 +25,6 @@ pub const WindowEvent = @import("pine-window").Event;
 
 const std = @import("std");
 const app = @import("pine/app.zig");
-const event = @import("pine/event.zig");
 const message = @import("pine/message.zig");
 const window = @import("pine/window.zig");
 // const renderer = @import("pine/renderer.zig");
