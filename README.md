@@ -7,7 +7,7 @@ To build and run the examples, simply run `zig build <example>` in your favorite
 Utilizes various other pine-based modules, including:
 
 - Pine ECS: [https://github.com/hl-valdemar/pine-ecs](https://github.com/hl-valdemar/pine-ecs), an ECS written entirely in Zig.
-- Pine Frame: [https://github.com/hl-valdemar/pine-ecs](https://github.com/hl-valdemar/pine-frame), a cross-platform window and graphics abstraction module containing `pine-window` and `pine-graphics`.
+- Pine Frame: [https://github.com/hl-valdemar/pine-ecs](https://github.com/hl-valdemar/pine-frame), a cross-platform window and graphics abstraction library containing the `pine-window` and `pine-graphics` modules.
 
 These modules are disjoint from each other and can be used on their own.
 
