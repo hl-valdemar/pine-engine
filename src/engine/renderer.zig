@@ -7,59 +7,69 @@ const pg = @import("pine-graphics");
 const Schedule = @import("schedule.zig").Schedule;
 const WindowComponent = @import("window.zig").WindowComponent;
 
+pub const RenderTarget = struct {
+    context: pg.GraphicsContext,
+    swapchain: pg.Swapchain,
+};
+
 pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
     fn init(registry: *ecs.Registry) anyerror!void {
         try registry.registerTaggedSystem(RenderSystem, Schedule.Render.toString());
+        try registry.registerTaggedSystem(CleanupSystem, Schedule.Deinit.toString());
     }
 
     const RenderSystem = struct {
-        var time: f32 = 0;
-
-        clear_color: struct {
-            r: f32 = 0.1,
-            g: f32 = 0.2,
-            b: f32 = 0.3,
-            a: f32 = 1.0,
-        },
+        frame_count: u64,
 
         pub fn init(_: Allocator) anyerror!RenderSystem {
-            return RenderSystem{ .clear_color = .{} };
+            return RenderSystem{ .frame_count = 0 };
         }
 
         pub fn deinit(_: *RenderSystem) void {}
 
         pub fn process(self: *RenderSystem, registry: *ecs.Registry) anyerror!void {
-            var window_entities = try registry.queryComponents(.{WindowComponent});
-
-            // animate the clear color for visual feedback
-            self.clear_color.r = @abs(@sin(time * 0.5)) * 0.3;
-            self.clear_color.g = @abs(@sin(time * 0.3)) * 0.3;
-            self.clear_color.b = @abs(@sin(time * 0.7)) * 0.3 + 0.2;
-            time += 0.01;
-
+            var window_entities = try registry.queryComponents(.{RenderTarget});
             while (window_entities.next()) |entity| {
-                const window = entity.get(WindowComponent).?;
+                const target = entity.get(RenderTarget).?;
 
-                pg.beginPass(&window.handle, .{
+                // begin render pass
+                var render_pass = try pg.beginPass(&target.swapchain, .{
                     .color = .{
                         .action = .clear,
-                        .r = self.clear_color.r,
-                        .g = self.clear_color.g,
-                        .b = self.clear_color.b,
-                        .a = self.clear_color.a,
+                        .r = @sin(@as(f32, @floatFromInt(self.frame_count)) * 0.01) * 0.5 + 0.5,
+                        .g = 0.3,
+                        .b = 0.3,
+                        .a = 1.0,
                     },
                 });
 
-                // render logic here...
+                // render commands would go here...
 
-                pg.endPass(&window.handle);
-                pg.commit(&window.handle);
+                // end render pass
+                render_pass.end();
 
-                // rendering commands would go here
-                // for example: draw meshes, sprites, etc.
+                // present the frame
+                pg.present(&target.swapchain);
 
-                pg.endPass(&window.handle);
-                pg.commit(&window.handle);
+                self.frame_count += 1;
+                std.time.sleep(16 * std.time.ns_per_ms); // ~60 fps
+            }
+        }
+    };
+
+    const CleanupSystem = struct {
+        pub fn init(_: Allocator) anyerror!CleanupSystem {
+            return CleanupSystem{};
+        }
+
+        pub fn deinit(_: *CleanupSystem) void {}
+
+        pub fn process(_: *CleanupSystem, registry: *ecs.Registry) anyerror!void {
+            var render_targets = try registry.queryComponents(.{RenderTarget});
+            while (render_targets.next()) |entity| {
+                const target = entity.get(RenderTarget).?;
+                target.context.destroy();
+                target.swapchain.destroy();
             }
         }
     };

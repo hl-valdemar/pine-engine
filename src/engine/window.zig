@@ -3,16 +3,19 @@ const Allocator = std.mem.Allocator;
 
 const ecs = @import("pine-ecs");
 const pw = @import("pine-window");
+const pg = @import("pine-graphics");
 
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
 const Schedule = @import("schedule.zig").Schedule;
 
+pub const WindowEvent = pw.Event;
+
 pub const WindowComponent = struct {
     handle: pw.Window,
 
-    pub fn init(desc: pw.WindowConfig) !WindowComponent {
-        const handle = try pw.Window.create(std.heap.page_allocator, desc);
+    pub fn init(allocator: Allocator, desc: pw.WindowDesc) !WindowComponent {
+        const handle = try pw.Window.create(allocator, desc);
 
         return WindowComponent{
             .handle = handle,
@@ -27,11 +30,12 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         try registry.pushResource(try pw.Platform.init());
 
         // register the window event
-        try registry.registerResource(pw.Event);
+        try registry.registerResource(WindowEvent);
 
         // register window-related systems
         try registry.registerTaggedSystem(EventPollingSystem, Schedule.PreUpdate.toString());
         try registry.registerTaggedSystem(WindowDestructionSystem, Schedule.PostUpdate.toString());
+        try registry.registerTaggedSystem(CleanupSystem, Schedule.Deinit.toString());
     }
 
     const EventPollingSystem = struct {
@@ -102,6 +106,22 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
                     },
                     else => {},
                 }
+            }
+        }
+    };
+
+    const CleanupSystem = struct {
+        pub fn init(_: std.mem.Allocator) anyerror!CleanupSystem {
+            return CleanupSystem{};
+        }
+
+        pub fn deinit(_: *CleanupSystem) void {}
+
+        pub fn process(_: *CleanupSystem, registry: *ecs.Registry) anyerror!void {
+            var window_entities = try registry.queryComponents(.{WindowComponent});
+            while (window_entities.next()) |entity| {
+                const window = entity.get(WindowComponent).?;
+                window.handle.destroy();
             }
         }
     };
