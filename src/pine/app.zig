@@ -3,10 +3,12 @@ const Allocator = std.mem.Allocator;
 
 const ecs = @import("pine-ecs");
 
-const Event = @import("event.zig").Event;
+// const Event = @import("event.zig").Event;
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
 const Schedule = @import("schedule.zig").Schedule;
+
+const WindowEvent = @import("pine-window").Event;
 
 /// Config with sensible defaults for the app.
 pub const AppDesc = struct {
@@ -28,7 +30,6 @@ pub const App = struct {
             }),
         };
 
-        try app.registerResource(Event);
         try app.registerResource(Message);
 
         return app;
@@ -103,7 +104,9 @@ pub const App = struct {
                 message_ptr.* = messages.next();
 
                 // clear all events including those not acted upon
-                self.registry.clearResource(Event) catch unreachable;
+                if (self.resourceRegistered(WindowEvent)) {
+                    self.registry.clearResource(WindowEvent) catch unreachable;
+                }
 
                 // clear messages from previous iteration including those not acted upon
                 self.registry.clearResource(Message) catch unreachable;
@@ -132,18 +135,25 @@ pub const App = struct {
     }
 
     /// Register a system in the app.
-    pub fn registerSystem(self: *App, comptime SystemType: type, schedule: Schedule) !void {
-        try self.registry.registerTaggedSystem(SystemType, schedule.toString());
+    pub fn registerSystem(self: *App, comptime System: type, schedule: Schedule) !void {
+        try self.registry.registerTaggedSystem(System, schedule.toString());
     }
 
     /// Register a resource in the app.
-    pub fn registerResource(self: *App, comptime ResourceType: type) !void {
-        try self.registry.registerResource(ResourceType);
+    pub fn registerResource(self: *App, comptime Resource: type) !void {
+        try self.registry.registerResource(Resource);
     }
 
     /// Check whether a system was registered.
+    ///
+    /// FIXME: implement this in pine-ecs instead
     pub fn systemRegistered(self: *App, schedule: Schedule) bool {
         return self.registry.system_manager.tagged_systems.contains(schedule.toString());
+    }
+
+    // FIXME: implement this in pine-ecs instead
+    pub fn resourceRegistered(self: *App, comptime Resource: type) bool {
+        return self.registry.resources.contains(@typeName(Resource));
     }
 
     /// Add a plugin bundling behavior.

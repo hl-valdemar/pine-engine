@@ -11,10 +11,10 @@ const WindowID = @import("window.zig").WindowID;
 //     pub const SHIFT = c.GLFW_MOD_SHIFT;
 // };
 
-/// For communication outward.
-pub const Event = union(enum) {
-    window_event: pw.Event,
-};
+// /// For communication outward.
+// pub const Event = union(enum) {
+//     window_event: pw.Event,
+// };
 
 // pub const Key = enum(c_int) {
 //     Escape = c.GLFW_KEY_ESCAPE,

@@ -13,7 +13,6 @@ pub const ecs = @import("pine-ecs");
 
 pub const App = app.App;
 pub const AppDesc = app.AppDesc;
-pub const Event = event.Event;
 pub const Key = event.Key;
 pub const KeyState = event.KeyState;
 pub const Modifier = event.Modifier;
@@ -21,6 +20,7 @@ pub const Message = message.Message;
 
 pub const WindowComponent = window.WindowComponent;
 pub const WindowPlugin = window.WindowPlugin;
+pub const WindowEvent = @import("pine-window").Event;
 
 // pub const RenderPlugin = renderer.RenderPlugin;
 
