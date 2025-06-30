@@ -24,7 +24,7 @@
     // original project's identity. Thus it is recommended to leave the comment
     // on the following line intact, so that it shows up in code reviews that
     // modify the field.
-    .fingerprint = 0x53db4b3ab4eccded, // Changing this has security and trust implications.
+    .fingerprint = 0x380a1a3c15ec8fc8, // Changing this has security and trust implications.
 
     // Tracks the earliest Zig version that the package considers to be a
     // supported use case.
@@ -36,18 +36,9 @@
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
     .dependencies = .{
-        .@"pine-ecs" = .{
-            .url = "git+https://github.com/hl-valdemar/pine-ecs#cfe803caf4b5fe1bb59bc3cc644ddaebfc1803b4",
-            .hash = "pine_ecs-0.1.1-4KYRKPw6AQB5rHHnBjjDWPde1siKJFHvomgpLN9YIMEX",
-        },
-
         .zm = .{
             .url = "git+https://github.com/griush/zm#27ee118800e6ee0804499d053a54100beb579bf3",
             .hash = "zm-0.3.0-cLX-WY3PAABvjPwxqDx9GZkMixyyrlHueLZTxpGy3kLE",
-        },
-        .@"pine-frame" = .{
-            .url = "git+https://github.com/hl-valdemar/pine-frame#244152fecf1dd878e8b603f926ca90dfe80d6860",
-            .hash = "pine_window-0.0.0-bOVd2ByrAAAI17umOYAcKu4kNoAIEzfuvV1Sn2oyWKm3",
         },
     },
     .paths = .{
