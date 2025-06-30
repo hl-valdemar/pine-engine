@@ -3,7 +3,6 @@ const Allocator = std.mem.Allocator;
 
 const ecs = @import("pine-ecs");
 
-// const Event = @import("event.zig").Event;
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
 const Schedule = @import("schedule.zig").Schedule;

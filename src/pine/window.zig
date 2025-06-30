@@ -4,10 +4,6 @@ const Allocator = std.mem.Allocator;
 const ecs = @import("pine-ecs");
 const pw = @import("pine-window");
 
-const event = @import("event.zig");
-const Key = event.Key;
-const KeyState = event.KeyState;
-const Modifier = event.Modifier;
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
 const Schedule = @import("schedule.zig").Schedule;
