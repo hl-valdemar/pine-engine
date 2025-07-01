@@ -118,10 +118,6 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
             });
         }
 
-        fn elapsedTimeNanos(start_time_ns: i128) i128 {
-            return std.time.nanoTimestamp() - start_time_ns;
-        }
-
         fn elapsedTimeSecs(start_time_ns: i128) f64 {
             return @as(f64, @floatFromInt(std.time.nanoTimestamp() - start_time_ns)) /
                 1_000_000_000.0;
