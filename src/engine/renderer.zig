@@ -63,12 +63,10 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
 
     const RenderSystem = struct {
         frame_count: u64,
-        frame_time_ns: i128, // nanoseconds
 
         pub fn init(_: Allocator) anyerror!RenderSystem {
             return RenderSystem{
                 .frame_count = 0,
-                .frame_time_ns = 0,
             };
         }
 
