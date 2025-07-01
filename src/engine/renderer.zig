@@ -34,10 +34,12 @@ pub const RenderTargetComponent = struct {
     }
 };
 
+/// A resource containing the frame count of the program.
 pub const FrameCount = struct {
     value: u64,
 };
 
+/// A resource containing the frame time in seconds.
 pub const FrameTime = struct {
     value: f64, // seconds
 };
@@ -61,48 +63,51 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
 
     const RenderSystem = struct {
         frame_count: u64,
-        frame_time: i128, // nanoseconds
+        frame_time_ns: i128, // nanoseconds
 
         pub fn init(_: Allocator) anyerror!RenderSystem {
             return RenderSystem{
                 .frame_count = 0,
-                .frame_time = 0,
+                .frame_time_ns = 0,
             };
         }
 
         pub fn deinit(_: *RenderSystem) void {}
 
         pub fn process(self: *RenderSystem, registry: *ecs.Registry) anyerror!void {
-            const start_time = std.time.nanoTimestamp();
+            var frame_time_secs: f64 = 0;
+            { // frame scope
+                const start_time_nanos = std.time.nanoTimestamp();
+                defer { // execute at end of frame scope
+                    frame_time_secs = elapsedTimeSecs(start_time_nanos);
+                    self.frame_count += 1;
+                    // std.time.sleep(16 * std.time.ns_per_ms); // ~60 fps
+                }
 
-            var window_entities = try registry.queryComponents(.{RenderTargetComponent});
-            while (window_entities.next()) |entity| {
-                const target = entity.get(RenderTargetComponent).?;
+                var window_entities = try registry.queryComponents(.{RenderTargetComponent});
+                while (window_entities.next()) |entity| {
+                    const target = entity.get(RenderTargetComponent).?;
 
-                // begin render pass
-                var render_pass = try pg.beginPass(&target.swapchain, .{
-                    .color = .{
-                        .action = .clear,
-                        .r = target.clear_color.r,
-                        .g = target.clear_color.g,
-                        .b = target.clear_color.b,
-                        .a = target.clear_color.a,
-                    },
-                });
+                    // begin render pass
+                    var render_pass = try pg.beginPass(&target.swapchain, .{
+                        .color = .{
+                            .action = .clear,
+                            .r = target.clear_color.r,
+                            .g = target.clear_color.g,
+                            .b = target.clear_color.b,
+                            .a = target.clear_color.a,
+                        },
+                    });
 
-                // render commands would go here...
+                    // render commands would go here...
 
-                // end render pass
-                render_pass.end();
+                    // end render pass
+                    render_pass.end();
 
-                // present the frame
-                pg.present(&target.swapchain);
+                    // present the frame
+                    pg.present(&target.swapchain);
+                }
             }
-
-            self.frame_time = std.time.nanoTimestamp() - start_time;
-
-            // std.time.sleep(16 * std.time.ns_per_ms); // ~60 fps
-            self.frame_count += 1;
 
             // push the frame count
             try registry.clearResource(FrameCount);
@@ -111,8 +116,17 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
             // push the frame time
             try registry.clearResource(FrameTime);
             try registry.pushResource(FrameTime{ // nanoseconds -> seconds
-                .value = @as(f64, @floatFromInt(self.frame_time)) / 1_000_000_000.0,
+                .value = frame_time_secs,
             });
+        }
+
+        fn elapsedTimeNanos(start_time_ns: i128) i128 {
+            return std.time.nanoTimestamp() - start_time_ns;
+        }
+
+        fn elapsedTimeSecs(start_time_ns: i128) f64 {
+            return @as(f64, @floatFromInt(std.time.nanoTimestamp() - start_time_ns)) /
+                1_000_000_000.0;
         }
     };
 
