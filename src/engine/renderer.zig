@@ -57,8 +57,8 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
         try registry.pushResource(FrameCount{ .value = 0 });
         try registry.pushResource(FrameTime{ .value = 0 });
 
-        try registry.registerTaggedSystem(RenderSystem, Schedule.Render.toString());
-        try registry.registerTaggedSystem(CleanupSystem, Schedule.Deinit.toString());
+        try registry.registerTaggedSystem(RenderSystem, Schedule.render.toString());
+        try registry.registerTaggedSystem(CleanupSystem, Schedule.deinit.toString());
     }
 
     const RenderSystem = struct {
@@ -79,15 +79,15 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
                 defer { // execute at end of frame scope
                     frame_time_secs = elapsedTimeSecs(start_time_nanos);
                     self.frame_count += 1;
-                    // std.time.sleep(16 * std.time.ns_per_ms); // ~60 fps
                 }
 
                 var window_entities = try registry.queryComponents(.{RenderTargetComponent});
                 while (window_entities.next()) |entity| {
                     const target = entity.get(RenderTargetComponent).?;
+                    var swapchain = target.swapchain;
 
                     // begin render pass
-                    var render_pass = try pg.beginPass(&target.swapchain, .{
+                    var render_pass = try pg.beginPass(&swapchain, .{
                         .color = .{
                             .action = .clear,
                             .r = target.clear_color.r,
@@ -99,11 +99,9 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
 
                     // render commands would go here...
 
-                    // end render pass
+                    // end render pass and present the frame
                     render_pass.end();
-
-                    // present the frame
-                    pg.present(&target.swapchain);
+                    swapchain.present();
                 }
             }
 

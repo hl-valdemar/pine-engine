@@ -43,22 +43,22 @@ pub const App = struct {
         const system_process_err_fmt = "failed to process systems with tag [{s}]: {}";
 
         // first initialize the app
-        if (self.systemRegistered(.Init)) {
-            self.processSystems(.Init) catch |err| {
-                log.warn(system_process_err_fmt, .{ Schedule.Init.toString(), err });
+        if (self.systemRegistered(.init)) {
+            self.processSystems(.init) catch |err| {
+                log.warn(system_process_err_fmt, .{ Schedule.init.toString(), err });
             };
         }
-        if (self.systemRegistered(.PostInit)) {
-            self.processSystems(.PostInit) catch |err| {
-                log.warn(system_process_err_fmt, .{ Schedule.PostInit.toString(), err });
+        if (self.systemRegistered(.post_init)) {
+            self.processSystems(.post_init) catch |err| {
+                log.warn(system_process_err_fmt, .{ Schedule.post_init.toString(), err });
             };
         }
 
         // run an update/render loop if any update systems are registered
-        if (self.systemRegistered(.PreUpdate) or
-            self.systemRegistered(.Update) or
-            self.systemRegistered(.PostUpdate) or
-            self.systemRegistered(.Render))
+        if (self.systemRegistered(.pre_update) or
+            self.systemRegistered(.update) or
+            self.systemRegistered(.post_update) or
+            self.systemRegistered(.render))
         {
             var first = self.registry.queryResource(Message) catch unreachable; // Message should always be registered!
             defer first.deinit();
@@ -69,30 +69,30 @@ pub const App = struct {
 
             while (message_ptr.* == null or message_ptr.*.? != Message.shutdown) {
                 // note: system events may be generated here
-                if (self.systemRegistered(.PreUpdate)) {
-                    self.processSystems(.PreUpdate) catch |err| {
-                        log.err(system_process_err_fmt, .{ Schedule.PreUpdate.toString(), err });
+                if (self.systemRegistered(.pre_update)) {
+                    self.processSystems(.pre_update) catch |err| {
+                        log.err(system_process_err_fmt, .{ Schedule.pre_update.toString(), err });
                     };
                 }
 
                 // note: user messages may be generated here
-                if (self.systemRegistered(.Update)) {
-                    self.processSystems(.Update) catch |err| {
-                        log.err(system_process_err_fmt, .{ Schedule.Update.toString(), err });
+                if (self.systemRegistered(.update)) {
+                    self.processSystems(.update) catch |err| {
+                        log.err(system_process_err_fmt, .{ Schedule.update.toString(), err });
                     };
                 }
 
                 // note: internal systems get a chance to react to user messages here
-                if (self.systemRegistered(.PostUpdate)) {
-                    self.processSystems(.PostUpdate) catch |err| {
-                        log.err(system_process_err_fmt, .{ Schedule.PostUpdate.toString(), err });
+                if (self.systemRegistered(.post_update)) {
+                    self.processSystems(.post_update) catch |err| {
+                        log.err(system_process_err_fmt, .{ Schedule.post_update.toString(), err });
                     };
                 }
 
                 // render the frame
-                if (self.systemRegistered(.Render)) {
-                    self.processSystems(.Render) catch |err| {
-                        log.err(system_process_err_fmt, .{ Schedule.Render.toString(), err });
+                if (self.systemRegistered(.render)) {
+                    self.processSystems(.render) catch |err| {
+                        log.err(system_process_err_fmt, .{ Schedule.render.toString(), err });
                     };
                 }
 
@@ -113,9 +113,9 @@ pub const App = struct {
         }
 
         // when done, clean up
-        if (self.systemRegistered(.Deinit)) {
-            self.processSystems(.Deinit) catch |err| {
-                log.err(system_process_err_fmt, .{ Schedule.Deinit.toString(), err });
+        if (self.systemRegistered(.deinit)) {
+            self.processSystems(.deinit) catch |err| {
+                log.err(system_process_err_fmt, .{ Schedule.deinit.toString(), err });
             };
         }
     }

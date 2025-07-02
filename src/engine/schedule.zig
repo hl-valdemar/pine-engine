@@ -1,31 +1,31 @@
 /// Schedule systems.
 pub const Schedule = enum {
     /// Run once on app initialization.
-    Init,
+    init,
 
-    /// Run once on app initialization (after Init).
-    PostInit,
+    /// Run once on app initialization (after init).
+    post_init,
 
     /// Run once on app deinitialization.
-    Deinit,
+    deinit,
 
-    /// Run every tick (before Update).
+    /// Run every tick (before update).
     ///
     /// Note: Pine generates events in this stage.
-    PreUpdate,
+    pre_update,
 
     /// Run every tick.
     ///
     /// Note: the user is expected to generate messages in this stage.
-    Update,
+    update,
 
-    /// Run every tick (after Update).
+    /// Run every tick (after update).
     ///
     /// Note: the system gets a chance to react to user generated messages in this stage.
-    PostUpdate,
+    post_update,
 
     /// Run every tick (after update cycle).
-    Render,
+    render,
 
     /// Return a string representation of the schedule value.
     pub fn toString(self: Schedule) []const u8 {

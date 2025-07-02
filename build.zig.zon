@@ -41,8 +41,8 @@
             .hash = "zm-0.3.0-cLX-WY3PAABvjPwxqDx9GZkMixyyrlHueLZTxpGy3kLE",
         },
         .pine_frame = .{
-            .url = "git+https://github.com/hl-valdemar/pine-frame#01edefb084a9366115cf32beb11077425405713a",
-            .hash = "pine_frame-0.0.0-Y5jKRVXmAADnP6B06pf_huLiMJDQvZSJl_MA0cQHdD4W",
+            .url = "git+https://github.com/hl-valdemar/pine-frame#b5d0f5041223ac3bc2189d0f141e3e59392aaf56",
+            .hash = "pine_frame-0.0.0-Y5jKRRtDAQBTscqiwLYlda1CU8d8_xGADOv1qr_0ZB5K",
         },
         .pine_ecs = .{
             .url = "git+https://github.com/hl-valdemar/pine-ecs#306b468e0e508f9a5f5b36df31fe10908ca29d67",

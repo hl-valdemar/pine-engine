@@ -34,9 +34,9 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         try registry.registerResource(WindowEvent);
 
         // register window-related systems
-        try registry.registerTaggedSystem(EventPollingSystem, Schedule.PreUpdate.toString());
-        try registry.registerTaggedSystem(WindowDestructionSystem, Schedule.PostUpdate.toString());
-        try registry.registerTaggedSystem(CleanupSystem, Schedule.Deinit.toString());
+        try registry.registerTaggedSystem(EventPollingSystem, Schedule.pre_update.toString());
+        try registry.registerTaggedSystem(WindowDestructionSystem, Schedule.post_update.toString());
+        try registry.registerTaggedSystem(CleanupSystem, Schedule.deinit.toString());
     }
 
     const EventPollingSystem = struct {

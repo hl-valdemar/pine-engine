@@ -22,9 +22,9 @@ pub fn main() !void {
     try app.addPlugin(pine.RenderPlugin);
 
     // register systems
-    try app.registerSystem(SetupSystem, .Init);
-    try app.registerSystem(InputSystem, .Update);
-    try app.registerSystem(UpdateClearColorSystem, .Update);
+    try app.registerSystem(SetupSystem, .init);
+    try app.registerSystem(InputSystem, .update);
+    try app.registerSystem(UpdateClearColorSystem, .update);
 
     // fire off the app
     try app.run();
