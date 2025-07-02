@@ -123,51 +123,47 @@ const InputSystem = struct {
         // react accordingly
         while (events.next()) |event| {
             switch (event) {
-                .key_up => {
-                    switch (event.key_up.key) {
-                        .escape => {
-                            if (event.key_up.mods.shift) {
-                                std.log.debug("shift+escape was 'just' released, shutting down! [{any}]", .{event});
+                .key_up => |key_event| {
+                    switch (key_event.key) {
+                        .escape => if (key_event.mods.shift and !key_event.is_repeat) {
+                            std.log.debug("shift+escape was 'just' released, shutting down! [{any}]", .{event});
 
-                                // push the shutdown request to the registry
-                                try registry.pushResource(pine.Message{ .shutdown = .requested });
-                            } else if (!event.key_up.is_repeat) { // just escape -> close active window
-                                std.log.debug("escape was 'just' released, closing window! [{any}]", .{event});
+                            // push the shutdown request to the registry
+                            try registry.pushResource(pine.Message{ .shutdown = .requested });
+                        } else if (!key_event.is_repeat) {
+                            std.log.debug("escape was 'just' released, closing window! [{any}]", .{event});
 
-                                // push a close window request to the registry
-                                try registry.pushResource(pine.Message{
-                                    .close_window = event.key_up.window_id,
-                                });
-                            }
+                            // push a close window request to the registry
+                            try registry.pushResource(pine.Message{
+                                .close_window = event.key_up.window_id,
+                            });
                         },
-                        .enter => { // spawn a new window on enter
-                            if (!event.key_up.is_repeat) {
-                                std.log.debug("enter was 'just' released, spawning window! [{any}]", .{event});
+                        .enter => if (!event.key_up.is_repeat) {
+                            std.log.debug("enter was 'just' released, spawning window! [{any}]", .{event});
 
-                                // random width and height for endless fun
-                                const width = rand.intRangeAtMost(u16, 250, 750);
-                                const height = rand.intRangeAtMost(u16, 250, 750);
+                            // random width and height for endless fun
+                            const width = rand.intRangeAtMost(u16, 250, 750);
+                            const height = rand.intRangeAtMost(u16, 250, 750);
 
-                                // why not make the position random as well
-                                const x = rand.intRangeAtMost(u16, 250, 750);
-                                const y = rand.intRangeAtMost(u16, 250, 750);
+                            // why not make the position random as well
+                            const x = rand.intRangeAtMost(u16, 250, 750);
+                            const y = rand.intRangeAtMost(u16, 250, 750);
 
-                                // create the window
-                                var window = try pine.WindowComponent.init(self.allocator, .{
-                                    .width = width,
-                                    .height = height,
-                                    .position = .{ .x = x, .y = y },
-                                    .title = "Pine Engine # Window Example",
-                                });
+                            // create the window
+                            var window = try pine.WindowComponent.init(self.allocator, .{
+                                .width = width,
+                                .height = height,
+                                .position = .{ .x = x, .y = y },
+                                .title = "Pine Engine # Window Example",
+                            });
 
-                                // create the render target
-                                const render_target = try pine.RenderTargetComponent.init(&window.handle, .{
-                                    .clear_color = .{ .r = 0.9, .g = 0.3, .b = 0.3, .a = 1.0 },
-                                });
+                            // create the render target
+                            const render_target = try pine.RenderTargetComponent.init(&window.handle, .{
+                                .clear_color = .{ .r = 0.9, .g = 0.3, .b = 0.3, .a = 1.0 },
+                            });
 
-                                // spawn the window as an entity to be managed by the ecs
-                                _ = try registry.spawn(.{ window, render_target });
-                            }
+                            // spawn the window as an entity to be managed by the ecs
+                            _ = try registry.spawn(.{ window, render_target });
                         },
                         else => {},
                     }
