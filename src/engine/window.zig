@@ -37,9 +37,6 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         try registry.registerTaggedSystem(EventPollingSystem, Schedule.PreUpdate.toString());
         try registry.registerTaggedSystem(WindowDestructionSystem, Schedule.PostUpdate.toString());
         try registry.registerTaggedSystem(CleanupSystem, Schedule.Deinit.toString());
-
-        // add the render plugin
-        try registry.addPlugin(RenderPlugin);
     }
 
     const EventPollingSystem = struct {
