@@ -58,7 +58,7 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
         try registry.pushResource(FrameTime{ .value = 0 });
 
         try registry.registerTaggedSystem(RenderSystem, Schedule.render.toString());
-        try registry.registerTaggedSystem(CleanupSystem, Schedule.deinit.toString());
+        try registry.registerTaggedSystem(CleanupSystem, Schedule.render_deinit.toString());
     }
 
     const RenderSystem = struct {

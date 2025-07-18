@@ -27,6 +27,9 @@ pub const Schedule = enum {
     /// Run every tick (after update cycle).
     render,
 
+    render_deinit,
+    window_deinit,
+
     /// Return a string representation of the schedule value.
     pub fn toString(self: Schedule) []const u8 {
         return @tagName(self);

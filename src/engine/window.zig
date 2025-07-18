@@ -12,7 +12,7 @@ const Schedule = @import("schedule.zig").Schedule;
 const renderer = @import("renderer.zig");
 const RenderPlugin = renderer.RenderPlugin;
 
-// global platform object
+// global window platform object
 var g_platform: pw.Platform = undefined;
 
 pub const WindowEvent = pw.Event;
@@ -40,7 +40,7 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         // register window-related systems
         try registry.registerTaggedSystem(EventPollingSystem, Schedule.pre_update.toString());
         try registry.registerTaggedSystem(WindowDestructionSystem, Schedule.post_update.toString());
-        try registry.registerTaggedSystem(CleanupSystem, Schedule.deinit.toString());
+        try registry.registerTaggedSystem(CleanupSystem, Schedule.window_deinit.toString());
     }
 
     const EventPollingSystem = struct {
@@ -87,7 +87,7 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
     };
 
     const WindowDestructionSystem = struct {
-        pub fn init(_: std.mem.Allocator) anyerror!WindowDestructionSystem {
+        pub fn init(_: Allocator) anyerror!WindowDestructionSystem {
             return WindowDestructionSystem{};
         }
 
@@ -115,22 +115,20 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
     };
 
     const CleanupSystem = struct {
-        pub fn init(_: std.mem.Allocator) anyerror!CleanupSystem {
+        pub fn init(_: Allocator) anyerror!CleanupSystem {
             return CleanupSystem{};
         }
 
         pub fn deinit(_: *CleanupSystem) void {}
 
         pub fn process(_: *CleanupSystem, registry: *ecs.Registry) anyerror!void {
-            log.debug("running window plugin cleanup system...", .{});
-
+            // destroy all swapchains
             var window_entities = try registry.queryComponents(.{WindowComponent});
             while (window_entities.next()) |entity| {
                 const window = entity.get(WindowComponent).?;
                 window.handle.destroy();
             }
-            // FIX: maybe we should also destroy the corresponding swapchains?
-
+            // destroy global window platform
             g_platform.deinit();
         }
     };
