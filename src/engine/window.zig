@@ -8,15 +8,20 @@ const pg = @import("pine-graphics");
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
 const Schedule = @import("schedule.zig").Schedule;
-const RenderPlugin = @import("renderer.zig").RenderPlugin;
+
+const renderer = @import("renderer.zig");
+const RenderPlugin = renderer.RenderPlugin;
+
+// global platform object
+var g_platform: pw.Platform = undefined;
 
 pub const WindowEvent = pw.Event;
 
 pub const WindowComponent = struct {
     handle: pw.Window,
 
-    pub fn init(allocator: Allocator, desc: pw.WindowDesc) !WindowComponent {
-        const handle = try pw.Window.create(allocator, desc);
+    pub fn init(desc: pw.WindowDesc) !WindowComponent {
+        const handle = try pw.Window.create(&g_platform, desc);
 
         return WindowComponent{
             .handle = handle,
@@ -26,9 +31,8 @@ pub const WindowComponent = struct {
 
 pub const WindowPlugin = ecs.Plugin.init("window", struct {
     fn init(registry: *ecs.Registry) anyerror!void {
-        // initialize the windowing platform as a resource
-        try registry.registerResource(pw.Platform);
-        try registry.pushResource(try pw.Platform.init());
+        // initialize static platform
+        g_platform = try pw.Platform.init();
 
         // register the window event
         try registry.registerResource(WindowEvent);
@@ -50,10 +54,9 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
 
         pub fn deinit(_: *EventPollingSystem) void {}
 
-        pub fn process(self: *EventPollingSystem, registry: *ecs.Registry) anyerror!void {
-            const platform_res = registry.querySingleResource(self.allocator, pw.Platform) catch return;
-            defer self.allocator.destroy(platform_res);
-            platform_res.*.?.pollEvents();
+        pub fn process(_: *EventPollingSystem, registry: *ecs.Registry) anyerror!void {
+            // if no poll, might as well be mole
+            g_platform.pollEvents();
 
             var window_entities = registry.queryComponents(.{WindowComponent}) catch return;
 
@@ -119,12 +122,16 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         pub fn deinit(_: *CleanupSystem) void {}
 
         pub fn process(_: *CleanupSystem, registry: *ecs.Registry) anyerror!void {
+            log.debug("running window plugin cleanup system...", .{});
+
             var window_entities = try registry.queryComponents(.{WindowComponent});
             while (window_entities.next()) |entity| {
                 const window = entity.get(WindowComponent).?;
                 window.handle.destroy();
             }
             // FIX: maybe we should also destroy the corresponding swapchains?
+
+            g_platform.deinit();
         }
     };
 }.init);

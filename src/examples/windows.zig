@@ -33,17 +33,15 @@ pub fn main() !void {
 /// This system is simply responsible for spawning a window on startup.
 /// It'll be registered to run on the .Init schedule, meaning only once on initialization.
 const SetupSystem = struct {
-    allocator: Allocator,
-
-    pub fn init(allocator: Allocator) anyerror!SetupSystem {
-        return SetupSystem{ .allocator = allocator };
+    pub fn init(_: Allocator) anyerror!SetupSystem {
+        return SetupSystem{};
     }
 
     pub fn deinit(_: *SetupSystem) void {}
 
-    pub fn process(self: *SetupSystem, registry: *ecs.Registry) anyerror!void {
+    pub fn process(_: *SetupSystem, registry: *ecs.Registry) anyerror!void {
         // create the window component
-        var window = try pine.WindowComponent.init(self.allocator, .{
+        var window = try pine.WindowComponent.init(.{
             .width = 500,
             .height = 500,
             .position = .{ .center = true },
@@ -97,16 +95,14 @@ const UpdateClearColorSystem = struct {
 /// This system is responsible for handling key presses.
 /// It'll be registered to run on the .Update schedule, querying for system events and reacting accordingly.
 const InputSystem = struct {
-    allocator: Allocator,
     prng: std.Random.Xoshiro256,
 
-    pub fn init(allocator: Allocator) anyerror!InputSystem {
+    pub fn init(_: Allocator) anyerror!InputSystem {
         // get a secure random seed from the OS
         var seed: u64 = undefined;
         try std.posix.getrandom(std.mem.asBytes(&seed));
 
         return InputSystem{
-            .allocator = allocator,
             // create a PRNG with the seed
             .prng = std.Random.DefaultPrng.init(seed),
         };
@@ -151,7 +147,7 @@ const InputSystem = struct {
                             const y = rand.intRangeAtMost(u16, 250, 750);
 
                             // create the window
-                            var window = try pine.WindowComponent.init(self.allocator, .{
+                            var window = try pine.WindowComponent.init(.{
                                 .width = width,
                                 .height = height,
                                 .position = .{ .x = x, .y = y },
