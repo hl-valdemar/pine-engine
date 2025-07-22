@@ -28,26 +28,9 @@ pub const App = struct {
             }),
         };
 
-        // register critical resources
-        try app.registerResource(Message);
-
-        // set up the default pipeline stages
-        try app.registry.pipeline.addStage("startup", .{});
-        try app.registry.pipeline.addStage("update", .{});
-        try app.registry.pipeline.addStage("render", .{});
-        try app.registry.pipeline.addStage("cleanup", .{});
-
-        // add default substages for update
-        const update_stage = app.registry.pipeline.getStage("update").?;
-        try update_stage.addSubstage("pre", .{});
-        try update_stage.addSubstage("main", .{});
-        try update_stage.addSubstage("post", .{});
-
-        // add default substages for render
-        const render_stage = app.registry.pipeline.getStage("render").?;
-        try render_stage.addSubstage("pre", .{});
-        try render_stage.addSubstage("main", .{});
-        try render_stage.addSubstage("post", .{});
+        // configure app-critical resources
+        try app.registerDefaultResources();
+        try app.setupDefaultPipeline();
 
         return app;
     }
@@ -56,20 +39,46 @@ pub const App = struct {
         self.registry.deinit();
     }
 
+    /// Register the default resources.
+    fn registerDefaultResources(self: *App) !void {
+        try self.registerResource(Message);
+    }
+
+    /// Setup the default pipeline.
+    fn setupDefaultPipeline(self: *App) !void {
+        // set up the default pipeline stages
+        try self.addStage("startup", .{});
+        try self.addStage("update", .{});
+        try self.addStage("render", .{});
+        try self.addStage("cleanup", .{});
+
+        // add default substages for update
+        const update_stage = self.getStage("update").?;
+        try update_stage.addSubstage("pre", .{});
+        try update_stage.addSubstage("main", .{});
+        try update_stage.addSubstage("post", .{});
+
+        // add default substages for render
+        const render_stage = self.getStage("render").?;
+        try render_stage.addSubstage("pre", .{});
+        try render_stage.addSubstage("main", .{});
+        try render_stage.addSubstage("post", .{});
+    }
+
     /// Run the app.
     pub fn run(self: *App) !void {
         // execute startup stage
-        self.registry.pipeline.executeStages(&self.registry, &.{"startup"}) catch |err| {
+        self.executeStages(&.{"startup"}) catch |err| {
             log.err("startup failed: {}", .{err});
         };
 
         // main loop
-        if (self.registry.pipeline.hasStages(&.{ "update", "render" }, .@"or")) {
+        if (self.hasStages(&.{ "update", "render" }, .@"or")) {
             var should_quit = false;
 
             while (!should_quit) {
                 // execute update and render stages
-                self.registry.pipeline.executeStages(&self.registry, &.{ "update", "render" }) catch |err| {
+                self.executeStages(&.{ "update", "render" }) catch |err| {
                     log.err("update/render failed: {}", .{err});
                 };
 
@@ -93,7 +102,7 @@ pub const App = struct {
         }
 
         // execute cleanup stage
-        self.registry.pipeline.executeStages(&self.registry, &.{"cleanup"}) catch |err| {
+        self.executeStages(&.{"cleanup"}) catch |err| {
             log.err("cleanup failed: {}", .{err});
         };
     }
@@ -111,25 +120,6 @@ pub const App = struct {
         return try self.registry.spawn(components);
     }
 
-    pub fn addSystem(self: *App, stage_path: []const u8, comptime System: type) !void {
-        // parse stage path (e.g., "update.pre" -> stage: "update", substage: "pre")
-        var it = std.mem.splitScalar(u8, stage_path, '.');
-        const stage_name = it.next() orelse return error.InvalidStagePath;
-        const substage_name = it.next();
-
-        if (substage_name) |sub| {
-            // register in substage
-            if (self.registry.pipeline.getStage(stage_name)) |stage| {
-                if (stage.substages) |*substages| {
-                    try substages.addSystem(sub, System);
-                } else return error.SubstageNotFound;
-            } else return error.StageNotFound;
-        } else {
-            // register directly in stage
-            try self.registry.pipeline.addSystem(stage_name, System);
-        }
-    }
-
     /// Register a resource in the app.
     pub fn registerResource(self: *App, comptime Resource: type) !void {
         try self.registry.registerResource(Resource);
@@ -137,7 +127,7 @@ pub const App = struct {
 
     // FIXME: implement this in pine-ecs instead
     pub fn resourceRegistered(self: *App, comptime Resource: type) bool {
-        return self.registry.resources.contains(@typeName(Resource));
+        return self.registry.resourceRegistered(Resource);
     }
 
     /// Add a plugin bundling behavior.
@@ -161,5 +151,40 @@ pub const App = struct {
     /// ```
     pub fn addPlugin(self: *App, plugin: ecs.Plugin) !void {
         try self.registry.addPlugin(plugin);
+    }
+
+    pub fn addStage(self: *App, name: []const u8, config: ecs.StageConfig) !void {
+        try self.registry.addStage(name, config);
+    }
+
+    pub fn getStage(self: *App, name: []const u8) ?*ecs.Stage {
+        return self.registry.getStage(name);
+    }
+
+    pub fn hasStages(self: *App, stage_names: []const []const u8, operation: ecs.Pipeline.HasStagesOp) bool {
+        return self.registry.hasStages(stage_names, operation);
+    }
+
+    pub fn executeStages(self: *App, stage_names: []const []const u8) !void {
+        try self.registry.executeStages(stage_names);
+    }
+
+    pub fn addSystem(self: *App, stage_path: []const u8, comptime System: type) !void {
+        // parse stage path (e.g., "update.pre" -> stage: "update", substage: "pre")
+        var it = std.mem.splitScalar(u8, stage_path, '.');
+        const stage_name = it.next() orelse return error.InvalidStagePath;
+        const substage_name = it.next();
+
+        if (substage_name) |sub| {
+            // register in substage
+            if (self.registry.pipeline.getStage(stage_name)) |stage| {
+                if (stage.substages) |*substages| {
+                    try substages.addSystem(sub, System);
+                } else return error.SubstageNotFound;
+            } else return error.StageNotFound;
+        } else {
+            // register directly in stage
+            try self.registry.pipeline.addSystem(stage_name, System);
+        }
     }
 };

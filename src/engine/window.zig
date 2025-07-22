@@ -37,14 +37,14 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         try registry.registerResource(WindowEvent);
 
         // add window systems to appropriate substages
-        if (registry.pipeline.getStage("update")) |update_stage| {
+        if (registry.getStage("update")) |update_stage| {
             if (update_stage.substages) |*substages| {
                 try substages.addSystem("pre", EventPollingSystem);
                 try substages.addSystem("post", WindowDestructionSystem);
             }
         }
 
-        try registry.pipeline.addSystem("cleanup", CleanupSystem);
+        try registry.addSystem("cleanup", CleanupSystem);
     }
 
     const EventPollingSystem = struct {

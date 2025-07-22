@@ -58,13 +58,13 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
         try registry.pushResource(FrameTime{ .value = 0 });
 
         // add render systems to appropriate substages
-        if (registry.pipeline.getStage("render")) |render_stage| {
+        if (registry.getStage("render")) |render_stage| {
             if (render_stage.substages) |*substages| {
                 try substages.addSystem("main", RenderSystem);
             }
         }
 
-        try registry.pipeline.addSystem("cleanup", CleanupSystem);
+        try registry.addSystem("cleanup", CleanupSystem);
     }
 
     const RenderSystem = struct {
