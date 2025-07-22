@@ -37,10 +37,15 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         // register the window event
         try registry.registerResource(WindowEvent);
 
-        // register window-related systems
-        try registry.registerTaggedSystem(EventPollingSystem, Schedule.pre_update.toString());
-        try registry.registerTaggedSystem(WindowDestructionSystem, Schedule.post_update.toString());
-        try registry.registerTaggedSystem(CleanupSystem, Schedule.window_deinit.toString());
+        // add window systems to appropriate substages
+        if (registry.pipeline.getStage("update")) |update_stage| {
+            if (update_stage.substages) |*substages| {
+                try substages.addSystem("pre", EventPollingSystem);
+                try substages.addSystem("main", WindowDestructionSystem);
+            }
+        }
+
+        try registry.pipeline.addSystem("cleanup", CleanupSystem);
     }
 
     const EventPollingSystem = struct {
@@ -59,6 +64,7 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
             g_platform.pollEvents();
 
             var window_entities = registry.queryComponents(.{WindowComponent}) catch return;
+            defer window_entities.deinit();
 
             // loop through all windows and poll for events
             while (window_entities.next()) |entity| {
@@ -95,11 +101,16 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
 
         pub fn process(_: *WindowDestructionSystem, registry: *ecs.Registry) anyerror!void {
             var messages = try registry.queryResource(Message);
+            defer messages.deinit();
+
             while (messages.next()) |message| {
                 switch (message) {
                     .close_window => |window_id| {
                         log.debug("got window close event! {any}", .{message});
+
                         var window_entities = registry.queryComponents(.{WindowComponent}) catch return;
+                        defer window_entities.deinit();
+
                         while (window_entities.next()) |entity| {
                             const window = entity.get(WindowComponent).?;
                             if (window.handle.id == window_id) {
@@ -122,12 +133,15 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         pub fn deinit(_: *CleanupSystem) void {}
 
         pub fn process(_: *CleanupSystem, registry: *ecs.Registry) anyerror!void {
-            // destroy all swapchains
+            // destroy all windows
             var window_entities = try registry.queryComponents(.{WindowComponent});
+            defer window_entities.deinit();
+
             while (window_entities.next()) |entity| {
                 const window = entity.get(WindowComponent).?;
                 window.handle.destroy();
             }
+
             // destroy global window platform
             g_platform.deinit();
         }

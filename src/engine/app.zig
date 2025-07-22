@@ -11,8 +11,8 @@ const WindowEvent = @import("pine-window").Event;
 
 /// Config with sensible defaults for the app.
 pub const AppDesc = struct {
-    // ECS related
-    remove_empty_archetypes: bool = true,
+    // ecs related
+    destroy_empty_archetypes: bool = true,
 };
 
 pub const App = struct {
@@ -25,11 +25,30 @@ pub const App = struct {
             .allocator = allocator,
             .config = config,
             .registry = try ecs.Registry.init(allocator, .{
-                .remove_empty_archetypes = config.remove_empty_archetypes,
+                .destroy_empty_archetypes = config.destroy_empty_archetypes,
             }),
         };
 
+        // register critical resources
         try app.registerResource(Message);
+
+        // set up the default pipeline stages
+        try app.registry.pipeline.addStage("startup", .{});
+        try app.registry.pipeline.addStage("update", .{});
+        try app.registry.pipeline.addStage("render", .{});
+        try app.registry.pipeline.addStage("cleanup", .{});
+
+        // add default substages for update
+        const update_stage = app.registry.pipeline.getStage("update").?;
+        try update_stage.addSubstage("pre", .{});
+        try update_stage.addSubstage("main", .{});
+        try update_stage.addSubstage("post", .{});
+
+        // add default substages for render
+        const render_stage = app.registry.pipeline.getStage("render").?;
+        try render_stage.addSubstage("pre", .{});
+        try render_stage.addSubstage("main", .{});
+        try render_stage.addSubstage("post", .{});
 
         return app;
     }
@@ -40,84 +59,44 @@ pub const App = struct {
 
     /// Run the app.
     pub fn run(self: *App) !void {
-        const system_process_err_fmt = "failed to process systems with tag [{s}]: {}";
+        // execute startup stage
+        self.registry.pipeline.executeStages(&self.registry, &.{"startup"}) catch |err| {
+            log.err("startup failed: {}", .{err});
+        };
 
-        // first initialize the app
-        if (self.systemRegistered(.init)) {
-            self.processSystems(.init) catch |err| {
-                log.warn(system_process_err_fmt, .{ Schedule.init.toString(), err });
-            };
-        }
-        if (self.systemRegistered(.post_init)) {
-            self.processSystems(.post_init) catch |err| {
-                log.warn(system_process_err_fmt, .{ Schedule.post_init.toString(), err });
-            };
-        }
+        // main loop
+        if (self.registry.pipeline.hasStages(&.{ "update", "render" }, .@"or")) {
+            var should_quit = false;
 
-        // run an update/render loop if any update systems are registered
-        if (self.systemRegistered(.pre_update) or
-            self.systemRegistered(.update) or
-            self.systemRegistered(.post_update) or
-            self.systemRegistered(.render))
-        {
-            var first = self.registry.queryResource(Message) catch unreachable; // Message should always be registered!
-            defer first.deinit();
+            while (!should_quit) {
+                // execute update and render stages
+                self.registry.pipeline.executeStages(&self.registry, &.{ "update", "render" }) catch |err| {
+                    log.err("update/render failed: {}", .{err});
+                };
 
-            const message_ptr = try self.allocator.create(?Message);
-            defer self.allocator.destroy(message_ptr);
-            message_ptr.* = first.next();
-
-            while (message_ptr.* == null or message_ptr.*.? != Message.shutdown) {
-                // note: system events may be generated here
-                if (self.systemRegistered(.pre_update)) {
-                    self.processSystems(.pre_update) catch |err| {
-                        log.err(system_process_err_fmt, .{ Schedule.pre_update.toString(), err });
-                    };
-                }
-
-                // note: user messages may be generated here
-                if (self.systemRegistered(.update)) {
-                    self.processSystems(.update) catch |err| {
-                        log.err(system_process_err_fmt, .{ Schedule.update.toString(), err });
-                    };
-                }
-
-                // note: internal systems get a chance to react to user messages here
-                if (self.systemRegistered(.post_update)) {
-                    self.processSystems(.post_update) catch |err| {
-                        log.err(system_process_err_fmt, .{ Schedule.post_update.toString(), err });
-                    };
-                }
-
-                // render the frame
-                if (self.systemRegistered(.render)) {
-                    self.processSystems(.render) catch |err| {
-                        log.err(system_process_err_fmt, .{ Schedule.render.toString(), err });
-                    };
-                }
-
-                // store this value before clearing!
-                // question: maybe the shutdown message could be burried under other messages - iterate to search for it?
-                var messages = self.registry.queryResource(Message) catch unreachable;
+                // check for shutdown message
+                var messages = try self.registry.queryResource(Message);
                 defer messages.deinit();
-                message_ptr.* = messages.next();
 
-                // clear all events including those not acted upon
+                while (messages.next()) |message| {
+                    if (message == .shutdown) {
+                        should_quit = true;
+                        break;
+                    }
+                }
+
+                // clear all events and messages
                 if (self.resourceRegistered(WindowEvent)) {
                     self.registry.clearResource(WindowEvent) catch unreachable;
                 }
-
-                // clear messages from previous iteration including those not acted upon
                 self.registry.clearResource(Message) catch unreachable;
             }
         }
 
-        // when done, clean up
-        if (self.systemRegistered(.deinit)) {
-            self.processSystems(.deinit) catch |err| {
-                log.err(system_process_err_fmt, .{ Schedule.deinit.toString(), err });
-            };
-        }
+        // execute cleanup stage
+        self.registry.pipeline.executeStages(&self.registry, &.{"cleanup"}) catch |err| {
+            log.err("cleanup failed: {}", .{err});
+        };
     }
 
     /// Spawn an entity with initial components.
@@ -133,21 +112,28 @@ pub const App = struct {
         return try self.registry.spawn(components);
     }
 
-    /// Register a system in the app.
-    pub fn registerSystem(self: *App, comptime System: type, schedule: Schedule) !void {
-        try self.registry.registerTaggedSystem(System, schedule.toString());
+    pub fn addSystem(self: *App, stage_path: []const u8, comptime System: type) !void {
+        // parse stage path (e.g., "update.pre" -> stage: "update", substage: "pre")
+        var it = std.mem.splitScalar(u8, stage_path, '.');
+        const stage_name = it.next() orelse return error.InvalidStagePath;
+        const substage_name = it.next();
+
+        if (substage_name) |sub| {
+            // register in substage
+            if (self.registry.pipeline.getStage(stage_name)) |stage| {
+                if (stage.substages) |*substages| {
+                    try substages.addSystem(sub, System);
+                } else return error.SubstageNotFound;
+            } else return error.StageNotFound;
+        } else {
+            // register directly in stage
+            try self.registry.pipeline.addSystem(stage_name, System);
+        }
     }
 
     /// Register a resource in the app.
     pub fn registerResource(self: *App, comptime Resource: type) !void {
         try self.registry.registerResource(Resource);
-    }
-
-    /// Check whether a system was registered.
-    ///
-    /// FIXME: implement this in pine-ecs instead
-    pub fn systemRegistered(self: *App, schedule: Schedule) bool {
-        return self.registry.system_manager.tagged_systems.contains(schedule.toString());
     }
 
     // FIXME: implement this in pine-ecs instead
@@ -176,9 +162,5 @@ pub const App = struct {
     /// ```
     pub fn addPlugin(self: *App, plugin: ecs.Plugin) !void {
         try self.registry.addPlugin(plugin);
-    }
-
-    fn processSystems(self: *App, schedule: Schedule) !void {
-        try self.registry.processSystemsTagged(schedule.toString());
     }
 };

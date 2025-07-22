@@ -22,9 +22,9 @@ pub fn main() !void {
     try app.addPlugin(pine.RenderPlugin);
 
     // register systems
-    try app.registerSystem(SetupSystem, .init);
-    try app.registerSystem(InputSystem, .update);
-    try app.registerSystem(UpdateClearColorSystem, .update);
+    try app.addSystem("startup", SetupSystem);
+    try app.addSystem("update", InputSystem);
+    try app.addSystem("update", UpdateClearColorSystem);
 
     // fire off the app
     try app.run();
@@ -77,6 +77,8 @@ const UpdateClearColorSystem = struct {
         // update the clear color accordingly for all render targets
         if (frame_count.*) |count| {
             var renderables = try registry.queryComponents(.{pine.RenderTargetComponent});
+            defer renderables.deinit();
+
             while (renderables.next()) |entity| {
                 const target = entity.get(pine.RenderTargetComponent).?;
                 target.clear_color.r = @sin(@as(f32, @floatFromInt(count.value)) * 0.01) * 0.5 + 0.5;
@@ -116,6 +118,7 @@ const InputSystem = struct {
 
         // query for system events
         var events = try registry.queryResource(pine.WindowEvent);
+        defer events.deinit();
 
         // react accordingly
         while (events.next()) |event| {

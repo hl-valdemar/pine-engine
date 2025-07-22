@@ -4,6 +4,7 @@ const Allocator = std.mem.Allocator;
 const ecs = @import("pine-ecs");
 const pg = @import("pine-graphics");
 const pw = @import("pine-window");
+const log = @import("log.zig");
 
 const Schedule = @import("schedule.zig").Schedule;
 const WindowComponent = @import("window.zig").WindowComponent;
@@ -57,8 +58,14 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
         try registry.pushResource(FrameCount{ .value = 0 });
         try registry.pushResource(FrameTime{ .value = 0 });
 
-        try registry.registerTaggedSystem(RenderSystem, Schedule.render.toString());
-        try registry.registerTaggedSystem(CleanupSystem, Schedule.render_deinit.toString());
+        // add render systems to appropriate substages
+        if (registry.pipeline.getStage("render")) |render_stage| {
+            if (render_stage.substages) |*substages| {
+                try substages.addSystem("main", RenderSystem);
+            }
+        }
+
+        try registry.pipeline.addSystem("cleanup", CleanupSystem);
     }
 
     const RenderSystem = struct {
@@ -82,6 +89,8 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
                 }
 
                 var window_entities = try registry.queryComponents(.{RenderTargetComponent});
+                defer window_entities.deinit();
+
                 while (window_entities.next()) |entity| {
                     const target = entity.get(RenderTargetComponent).?;
                     var swapchain = target.swapchain;
@@ -133,13 +142,17 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
 
         pub fn deinit(_: *CleanupSystem) void {}
 
-        pub fn process(_: *CleanupSystem, registry: *ecs.Registry) anyerror!void {
-            // destroy all swapchains
-            var renderables = try registry.queryComponents(.{RenderTargetComponent});
-            while (renderables.next()) |entity| {
-                const target = entity.get(RenderTargetComponent).?;
-                target.swapchain.destroy();
-            }
+        // FIXME: is cleanup in window plugin sufficiently cleaning up render objects?
+        pub fn process(_: *CleanupSystem, _: *ecs.Registry) anyerror!void {
+            // // destroy all swapchains
+            // var renderables = try registry.queryComponents(.{RenderTargetComponent});
+            // defer renderables.deinit();
+            //
+            // while (renderables.next()) |entity| {
+            //     const target = entity.get(RenderTargetComponent).?;
+            //     target.swapchain.destroy();
+            // }
+
             // destroy global graphics context
             g_graphics_ctx.destroy();
         }
