@@ -41,7 +41,7 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         if (registry.pipeline.getStage("update")) |update_stage| {
             if (update_stage.substages) |*substages| {
                 try substages.addSystem("pre", EventPollingSystem);
-                try substages.addSystem("main", WindowDestructionSystem);
+                try substages.addSystem("post", WindowDestructionSystem);
             }
         }
 

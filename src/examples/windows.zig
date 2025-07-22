@@ -23,8 +23,8 @@ pub fn main() !void {
 
     // register systems
     try app.addSystem("startup", SetupSystem);
-    try app.addSystem("update", InputSystem);
-    try app.addSystem("update", UpdateClearColorSystem);
+    try app.addSystem("update.main", InputSystem);
+    try app.addSystem("update.main", UpdateClearColorSystem);
 
     // fire off the app
     try app.run();
