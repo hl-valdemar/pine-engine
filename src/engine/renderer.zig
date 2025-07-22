@@ -6,7 +6,6 @@ const pg = @import("pine-graphics");
 const pw = @import("pine-window");
 const log = @import("log.zig");
 
-const Schedule = @import("schedule.zig").Schedule;
 const WindowComponent = @import("window.zig").WindowComponent;
 
 // global graphics context object

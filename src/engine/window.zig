@@ -7,7 +7,6 @@ const pg = @import("pine-graphics");
 
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
-const Schedule = @import("schedule.zig").Schedule;
 
 const renderer = @import("renderer.zig");
 const RenderPlugin = renderer.RenderPlugin;

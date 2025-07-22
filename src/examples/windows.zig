@@ -31,7 +31,7 @@ pub fn main() !void {
 }
 
 /// This system is simply responsible for spawning a window on startup.
-/// It'll be registered to run on the .Init schedule, meaning only once on initialization.
+/// It'll be registered to run in the startup stage, meaning only once on initialization.
 const SetupSystem = struct {
     pub fn init(_: Allocator) anyerror!SetupSystem {
         return SetupSystem{};
@@ -59,7 +59,7 @@ const SetupSystem = struct {
 };
 
 /// This system updates the clear color of the windows.
-/// It'll be registered to run on the .Update schedule, querying frame count on each update cycle.
+/// It'll be registered to run in the update's main stage, querying frame count on each update cycle.
 const UpdateClearColorSystem = struct {
     allocator: Allocator,
 
@@ -95,7 +95,7 @@ const UpdateClearColorSystem = struct {
 };
 
 /// This system is responsible for handling key presses.
-/// It'll be registered to run on the .Update schedule, querying for system events and reacting accordingly.
+/// It'll be registered to run in the update's main stage, querying for system events and reacting accordingly.
 const InputSystem = struct {
     prng: std.Random.Xoshiro256,
 

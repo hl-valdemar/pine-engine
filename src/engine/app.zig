@@ -5,7 +5,6 @@ const ecs = @import("pine-ecs");
 
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
-const Schedule = @import("schedule.zig").Schedule;
 
 const WindowEvent = @import("pine-window").Event;
 
