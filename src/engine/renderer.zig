@@ -76,8 +76,6 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
             };
         }
 
-        pub fn deinit(_: *RenderSystem) void {}
-
         pub fn process(self: *RenderSystem, registry: *ecs.Registry) anyerror!void {
             var frame_time_secs: f64 = 0;
             { // frame scope
@@ -105,7 +103,7 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
                         },
                     });
 
-                    // render commands would go here...
+                    // render commands go here...
 
                     // end render pass and present the frame
                     render_pass.end();
@@ -135,12 +133,6 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
     };
 
     const CleanupSystem = struct {
-        pub fn init(_: Allocator) anyerror!CleanupSystem {
-            return CleanupSystem{};
-        }
-
-        pub fn deinit(_: *CleanupSystem) void {}
-
         // FIXME: is cleanup in window plugin sufficiently cleaning up render objects?
         pub fn process(_: *CleanupSystem, _: *ecs.Registry) anyerror!void {
             // // destroy all swapchains

@@ -48,16 +48,6 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
     }
 
     const EventPollingSystem = struct {
-        allocator: Allocator,
-
-        pub fn init(allocator: Allocator) anyerror!EventPollingSystem {
-            return EventPollingSystem{
-                .allocator = allocator,
-            };
-        }
-
-        pub fn deinit(_: *EventPollingSystem) void {}
-
         pub fn process(_: *EventPollingSystem, registry: *ecs.Registry) anyerror!void {
             // if no poll, might as well be mole
             g_platform.pollEvents();
@@ -92,12 +82,6 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
     };
 
     const WindowDestructionSystem = struct {
-        pub fn init(_: Allocator) anyerror!WindowDestructionSystem {
-            return WindowDestructionSystem{};
-        }
-
-        pub fn deinit(_: *WindowDestructionSystem) void {}
-
         pub fn process(_: *WindowDestructionSystem, registry: *ecs.Registry) anyerror!void {
             var messages = try registry.queryResource(Message);
             defer messages.deinit();
@@ -125,12 +109,6 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
     };
 
     const CleanupSystem = struct {
-        pub fn init(_: Allocator) anyerror!CleanupSystem {
-            return CleanupSystem{};
-        }
-
-        pub fn deinit(_: *CleanupSystem) void {}
-
         pub fn process(_: *CleanupSystem, registry: *ecs.Registry) anyerror!void {
             // destroy all windows
             var window_entities = try registry.queryComponents(.{WindowComponent});

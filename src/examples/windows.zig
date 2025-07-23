@@ -33,12 +33,6 @@ pub fn main() !void {
 /// This system is simply responsible for spawning a window on startup.
 /// It'll be registered to run in the startup stage, meaning only once on initialization.
 const SetupSystem = struct {
-    pub fn init(_: Allocator) anyerror!SetupSystem {
-        return SetupSystem{};
-    }
-
-    pub fn deinit(_: *SetupSystem) void {}
-
     pub fn process(_: *SetupSystem, registry: *ecs.Registry) anyerror!void {
         // create the window component
         var window = try pine.WindowComponent.init(.{
@@ -66,8 +60,6 @@ const UpdateClearColorSystem = struct {
     pub fn init(allocator: Allocator) anyerror!UpdateClearColorSystem {
         return UpdateClearColorSystem{ .allocator = allocator };
     }
-
-    pub fn deinit(_: *UpdateClearColorSystem) void {}
 
     pub fn process(self: *UpdateClearColorSystem, registry: *ecs.Registry) anyerror!void {
         // query just a single resource
@@ -109,8 +101,6 @@ const InputSystem = struct {
             .prng = std.Random.DefaultPrng.init(seed),
         };
     }
-
-    pub fn deinit(_: *InputSystem) void {}
 
     pub fn process(self: *InputSystem, registry: *ecs.Registry) anyerror!void {
         // get random values
