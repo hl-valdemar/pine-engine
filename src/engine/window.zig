@@ -12,6 +12,7 @@ const renderer = @import("render/graphical.zig");
 const RenderPlugin = renderer.RenderPlugin;
 
 // global window platform object
+// FIXME: should probably be converted to an optional
 var g_platform: pw.Platform = undefined;
 
 pub const WindowEvent = pw.Event;
@@ -20,10 +21,8 @@ pub const WindowComponent = struct {
     handle: pw.Window,
 
     pub fn init(desc: pw.WindowDesc) !WindowComponent {
-        const handle = try pw.Window.create(&g_platform, desc);
-
         return WindowComponent{
-            .handle = handle,
+            .handle = try pw.Window.init(&g_platform, desc),
         };
     }
 };
@@ -44,7 +43,7 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
 
     const EventPollingSystem = struct {
         pub fn process(_: *EventPollingSystem, registry: *ecs.Registry) anyerror!void {
-            // if no poll, might as well be mole
+            // remember to poll events!
             g_platform.pollEvents();
 
             var window_query = registry.queryComponents(.{WindowComponent}) catch return;
@@ -56,7 +55,7 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
                 var num_closed: u32 = 0;
                 if (window.handle.shouldClose() catch false) {
                     // destroy both the entity and the window resource
-                    window.handle.destroy();
+                    window.handle.deinit();
                     _ = try registry.destroyEntity(entity.id());
 
                     num_closed += 1;
@@ -110,7 +109,7 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
 
             while (window_query.next()) |entity| {
                 const window = entity.get(WindowComponent).?;
-                window.handle.destroy();
+                window.handle.deinit();
             }
 
             // destroy global window platform

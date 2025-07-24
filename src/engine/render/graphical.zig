@@ -9,6 +9,7 @@ const log = @import("../log.zig");
 const WindowComponent = @import("../window.zig").WindowComponent;
 
 // global graphics context object
+// FIXME: should probably be converted to an optional
 var g_graphics_ctx: pg.GraphicsContext = undefined;
 
 pub const Color = struct {
@@ -29,7 +30,7 @@ pub const RenderTargetComponent = struct {
     pub fn init(window: *pw.Window, desc: RenderTargetDesc) !RenderTargetComponent {
         return RenderTargetComponent{
             .clear_color = desc.clear_color,
-            .swapchain = try pg.Swapchain.create(&g_graphics_ctx, window),
+            .swapchain = try pg.Swapchain.init(&g_graphics_ctx, window),
         };
     }
 };
@@ -47,7 +48,7 @@ pub const FrameTime = struct {
 pub const RenderPlugin = ecs.Plugin.init("render", struct {
     fn init(registry: *ecs.Registry) anyerror!void {
         // initialize the global graphics context
-        g_graphics_ctx = try pg.GraphicsContext.create(.auto);
+        g_graphics_ctx = try pg.GraphicsContext.init(.auto);
 
         // register resources
         try registry.registerResource(FrameCount);
@@ -140,7 +141,7 @@ pub const RenderPlugin = ecs.Plugin.init("render", struct {
             // }
 
             // destroy global graphics context
-            g_graphics_ctx.destroy();
+            g_graphics_ctx.deinit();
         }
     };
 }.init);
