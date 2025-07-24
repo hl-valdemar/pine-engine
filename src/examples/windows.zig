@@ -63,17 +63,17 @@ const UpdateClearColorSystem = struct {
 
     pub fn process(self: *UpdateClearColorSystem, registry: *ecs.Registry) anyerror!void {
         // query just a single resource
-        const frame_count = try registry.querySingleResource(self.allocator, pine.FrameCount);
-        defer self.allocator.destroy(frame_count); // note: we must deallocate this copy manually
+        const frame_count_query = try registry.querySingleResource(self.allocator, pine.FrameCount);
+        defer self.allocator.destroy(frame_count_query); // note: we must deallocate this copy manually
 
         // update the clear color accordingly for all render targets
-        if (frame_count.*) |count| {
-            var renderables = try registry.queryComponents(.{pine.RenderTargetComponent});
-            defer renderables.deinit();
+        if (frame_count_query.*) |frame_count| {
+            var target_query = try registry.queryComponents(.{pine.RenderTargetComponent});
+            defer target_query.deinit();
 
-            while (renderables.next()) |entity| {
+            while (target_query.next()) |entity| {
                 const target = entity.get(pine.RenderTargetComponent).?;
-                target.clear_color.r = @sin(@as(f32, @floatFromInt(count.value)) * 0.01) * 0.5 + 0.5;
+                target.clear_color.r = @sin(@as(f32, @floatFromInt(frame_count.value)) * 0.01) * 0.5 + 0.5;
             }
         }
 
@@ -107,11 +107,11 @@ const InputSystem = struct {
         const rand = self.prng.random();
 
         // query for system events
-        var events = try registry.queryResource(pine.WindowEvent);
-        defer events.deinit();
+        var event_query = try registry.queryResource(pine.WindowEvent);
+        defer event_query.deinit();
 
         // react accordingly
-        while (events.next()) |event| {
+        while (event_query.next()) |event| {
             switch (event) {
                 .key_up => |key_event| {
                     switch (key_event.key) {

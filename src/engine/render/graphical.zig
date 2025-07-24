@@ -80,10 +80,10 @@ pub const RenderPlugin = ecs.Plugin.init("render", struct {
                     self.frame_count += 1;
                 }
 
-                var window_entities = try registry.queryComponents(.{RenderTargetComponent});
-                defer window_entities.deinit();
+                var window_query = try registry.queryComponents(.{RenderTargetComponent});
+                defer window_query.deinit();
 
-                while (window_entities.next()) |entity| {
+                while (window_query.next()) |entity| {
                     const target = entity.get(RenderTargetComponent).?;
                     var swapchain = target.swapchain;
 

@@ -92,10 +92,10 @@ pub const App = struct {
                 };
 
                 // check for shutdown message
-                var messages = try self.registry.queryResource(Message);
-                defer messages.deinit();
+                var message_query = try self.registry.queryResource(Message);
+                defer message_query.deinit();
 
-                while (messages.next()) |message| {
+                while (message_query.next()) |message| {
                     if (message == .shutdown) {
                         should_quit = true;
                         break;
