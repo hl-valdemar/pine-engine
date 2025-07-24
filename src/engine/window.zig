@@ -8,7 +8,7 @@ const pg = @import("pine-graphics");
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
 
-const renderer = @import("renderer.zig");
+const renderer = @import("render/graphical.zig");
 const RenderPlugin = renderer.RenderPlugin;
 
 // global window platform object
@@ -37,13 +37,8 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         try registry.registerResource(WindowEvent);
 
         // add window systems to appropriate substages
-        if (registry.getStage("update")) |update_stage| {
-            if (update_stage.substages) |*substages| {
-                try substages.addSystem("pre", EventPollingSystem);
-                try substages.addSystem("post", WindowDestructionSystem);
-            }
-        }
-
+        try registry.addSystem("update.pre", EventPollingSystem);
+        try registry.addSystem("update.post", WindowDestructionSystem);
         try registry.addSystem("cleanup", CleanupSystem);
     }
 
@@ -68,7 +63,6 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
 
                     if (num_closed == window_entities.views.len) {
                         try registry.pushResource(Message{ .shutdown = .requested });
-                        window_entities.deinit(); // necessary as we don't reach the auto-deinit at the end of the iterator
                         break; // no need to continue
                     }
                 }

@@ -4,9 +4,9 @@ const Allocator = std.mem.Allocator;
 const ecs = @import("pine-ecs");
 const pg = @import("pine-graphics");
 const pw = @import("pine-window");
-const log = @import("log.zig");
+const log = @import("../log.zig");
 
-const WindowComponent = @import("window.zig").WindowComponent;
+const WindowComponent = @import("../window.zig").WindowComponent;
 
 // global graphics context object
 var g_graphics_ctx: pg.GraphicsContext = undefined;
@@ -44,7 +44,7 @@ pub const FrameTime = struct {
     value: f64, // seconds
 };
 
-pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
+pub const RenderPlugin = ecs.Plugin.init("render", struct {
     fn init(registry: *ecs.Registry) anyerror!void {
         // initialize the global graphics context
         g_graphics_ctx = try pg.GraphicsContext.create(.auto);
@@ -58,12 +58,7 @@ pub const RenderPlugin = ecs.Plugin.init("renderer", struct {
         try registry.pushResource(FrameTime{ .value = 0 });
 
         // add render systems to appropriate substages
-        if (registry.getStage("render")) |render_stage| {
-            if (render_stage.substages) |*substages| {
-                try substages.addSystem("main", RenderSystem);
-            }
-        }
-
+        try registry.addSystem("render.main", RenderSystem);
         try registry.addSystem("cleanup", CleanupSystem);
     }
 

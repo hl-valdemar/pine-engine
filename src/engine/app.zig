@@ -8,6 +8,11 @@ const Message = @import("message.zig").Message;
 
 const WindowEvent = @import("pine-window").Event;
 
+// FIXME: replace any direct uses of WindowEvent with this Event type that wraps other event types
+const Event = union(enum) {
+    window_event: WindowEvent,
+};
+
 /// Config with sensible defaults for the app.
 pub const AppDesc = struct {
     // ecs related
@@ -20,6 +25,8 @@ pub const App = struct {
     registry: ecs.Registry,
 
     pub fn init(allocator: Allocator, config: AppDesc) !App {
+        log.info("booting kernel...", .{});
+
         var app = App{
             .allocator = allocator,
             .config = config,
@@ -41,6 +48,7 @@ pub const App = struct {
 
     /// Register the default resources.
     fn registerDefaultResources(self: *App) !void {
+        try self.registerResource(Event);
         try self.registerResource(Message);
     }
 
@@ -68,12 +76,13 @@ pub const App = struct {
     /// Run the app.
     pub fn run(self: *App) !void {
         // execute startup stage
+        log.info("booting userspace...", .{});
         self.executeStages(&.{"startup"}) catch |err| {
             log.err("startup failed: {}", .{err});
         };
 
         // main loop
-        if (self.hasStages(&.{ "update", "render" }, .@"or")) {
+        if (!self.stagesEmpty(&.{ "update", "render" }, .@"and")) {
             var should_quit = false;
 
             while (!should_quit) {
@@ -105,6 +114,8 @@ pub const App = struct {
         self.executeStages(&.{"cleanup"}) catch |err| {
             log.err("cleanup failed: {}", .{err});
         };
+
+        log.info("shutting down...", .{});
     }
 
     /// Spawn an entity with initial components.
@@ -161,30 +172,58 @@ pub const App = struct {
         return self.registry.getStage(name);
     }
 
-    pub fn hasStages(self: *App, stage_names: []const []const u8, operation: ecs.Pipeline.HasStagesOp) bool {
+    pub fn getStageNames(self: *App, allocator: Allocator) void {
+        return try self.registry.getStageNames(allocator);
+    }
+
+    pub fn hasStages(
+        self: *App,
+        stage_names: []const []const u8,
+        operation: ecs.Pipeline.BooleanOperation,
+    ) bool {
         return self.registry.hasStages(stage_names, operation);
     }
 
-    pub fn executeStages(self: *App, stage_names: []const []const u8) !void {
+    pub fn executeStages(
+        self: *App,
+        stage_names: []const []const u8,
+    ) !void {
         try self.registry.executeStages(stage_names);
     }
 
-    pub fn addSystem(self: *App, stage_path: []const u8, comptime System: type) !void {
-        // parse stage path (e.g., "update.pre" -> stage: "update", substage: "pre")
-        var it = std.mem.splitScalar(u8, stage_path, '.');
-        const stage_name = it.next() orelse return error.InvalidStagePath;
-        const substage_name = it.next();
+    pub fn addSystem(
+        self: *App,
+        stage_path: []const u8,
+        comptime System: type,
+    ) !void {
+        try self.registry.addSystem(stage_path, System);
+    }
 
-        if (substage_name) |sub| {
-            // register in substage
-            if (self.registry.pipeline.getStage(stage_name)) |stage| {
-                if (stage.substages) |*substages| {
-                    try substages.addSystem(sub, System);
-                } else return error.SubstageNotFound;
-            } else return error.StageNotFound;
-        } else {
-            // register directly in stage
-            try self.registry.pipeline.addSystem(stage_name, System);
-        }
+    pub fn addSystems(
+        self: *App,
+        stage_path: []const u8,
+        comptime systems: anytype,
+    ) !void {
+        try self.registry.addSystems(stage_path, systems);
+    }
+
+    pub fn getSystemNames(
+        self: *App,
+        allocator: Allocator,
+        stage_name: []const u8,
+    ) ![][]const u8 {
+        return try self.registry.getSystemNames(allocator, stage_name);
+    }
+
+    pub fn stageEmpty(self: *App, stage_name: []const u8) bool {
+        return self.registry.stageEmpty(stage_name);
+    }
+
+    pub fn stagesEmpty(
+        self: *App,
+        stage_names: []const []const u8,
+        operation: ecs.Pipeline.BooleanOperation,
+    ) bool {
+        return self.registry.stagesEmpty(stage_names, operation);
     }
 };
