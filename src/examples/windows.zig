@@ -20,6 +20,7 @@ pub fn main() !void {
     // add the window plugin
     try app.addPlugin(pine.WindowPlugin);
     try app.addPlugin(pine.RenderPlugin);
+    try app.addPlugin(pine.TimingPlugin);
 
     // register systems
     try app.addSystem("startup", SetupSystem);
@@ -55,25 +56,20 @@ const SetupSystem = struct {
 /// This system updates the clear color of the windows.
 /// It'll be registered to run in the update's main stage, querying frame count on each update cycle.
 const UpdateClearColorSystem = struct {
-    allocator: Allocator,
-
-    pub fn init(allocator: Allocator) anyerror!UpdateClearColorSystem {
-        return UpdateClearColorSystem{ .allocator = allocator };
-    }
-
-    pub fn process(self: *UpdateClearColorSystem, registry: *ecs.Registry) anyerror!void {
-        // query just a single resource
-        const frame_count_query = try registry.querySingleResource(self.allocator, pine.FrameCount);
-        defer self.allocator.destroy(frame_count_query); // note: we must deallocate this copy manually
+    pub fn process(_: *UpdateClearColorSystem, registry: *ecs.Registry) anyerror!void {
+        const time_millis = switch (try registry.queryResource(pine.TimeMillis)) {
+            .single => |time| time,
+            .collection => unreachable,
+        };
 
         // update the clear color accordingly for all render targets
-        if (frame_count_query.*) |frame_count| {
+        if (time_millis.resource) |millis| {
             var target_query = try registry.queryComponents(.{pine.RenderTargetComponent});
             defer target_query.deinit();
 
             while (target_query.next()) |entity| {
                 const target = entity.get(pine.RenderTargetComponent).?;
-                target.clear_color.r = @sin(@as(f32, @floatFromInt(frame_count.value)) * 0.01) * 0.5 + 0.5;
+                target.clear_color.r = @sin(@as(f32, @floatFromInt(millis.value)) * 0.01) * 0.5 + 0.5;
             }
         }
 
@@ -107,11 +103,14 @@ const InputSystem = struct {
         const rand = self.prng.random();
 
         // query for system events
-        var event_query = try registry.queryResource(pine.WindowEvent);
-        defer event_query.deinit();
+        var events = switch (try registry.queryResource(pine.WindowEvent)) {
+            .collection => |col| col,
+            .single => unreachable,
+        };
+        defer events.deinit();
 
         // react accordingly
-        while (event_query.next()) |event| {
+        while (events.next()) |event| {
             switch (event) {
                 .key_up => |key_event| {
                     switch (key_event.key) {

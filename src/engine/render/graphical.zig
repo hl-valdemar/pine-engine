@@ -4,8 +4,9 @@ const Allocator = std.mem.Allocator;
 const ecs = @import("pine-ecs");
 const pg = @import("pine-graphics");
 const pw = @import("pine-window");
-const log = @import("../log.zig");
 
+const log = @import("../log.zig");
+const elapsedTimeSecs = @import("../time.zig").elapsedTimeSecs;
 const WindowComponent = @import("../window.zig").WindowComponent;
 
 // global graphics context object
@@ -38,11 +39,13 @@ pub const RenderTargetComponent = struct {
 /// A resource containing the frame count of the program.
 pub const FrameCount = struct {
     value: u64,
+    window_id: pw.WindowID,
 };
 
 /// A resource containing the frame time in seconds.
 pub const FrameTime = struct {
     value: f64, // seconds
+    window_id: pw.WindowID,
 };
 
 pub const RenderPlugin = ecs.Plugin.init("render", struct {
@@ -51,12 +54,8 @@ pub const RenderPlugin = ecs.Plugin.init("render", struct {
         g_graphics_ctx = try pg.GraphicsContext.init(.auto);
 
         // register resources
-        try registry.registerResource(FrameCount);
-        try registry.registerResource(FrameTime);
-
-        // push initial values
-        try registry.pushResource(FrameCount{ .value = 0 });
-        try registry.pushResource(FrameTime{ .value = 0 });
+        try registry.registerResource(FrameCount, .collection);
+        try registry.registerResource(FrameTime, .collection);
 
         // add render systems to appropriate substages
         try registry.addSystem("render.main", RenderSystem);
@@ -73,6 +72,10 @@ pub const RenderPlugin = ecs.Plugin.init("render", struct {
         }
 
         pub fn process(self: *RenderSystem, registry: *ecs.Registry) anyerror!void {
+            // ready frame info for next pass
+            try registry.clearResource(FrameCount);
+            try registry.clearResource(FrameTime);
+
             var frame_time_secs: f64 = 0;
             { // frame scope
                 const start_time_nanos = std.time.nanoTimestamp();
@@ -81,7 +84,7 @@ pub const RenderPlugin = ecs.Plugin.init("render", struct {
                     self.frame_count += 1;
                 }
 
-                var window_query = try registry.queryComponents(.{RenderTargetComponent});
+                var window_query = try registry.queryComponents(.{ WindowComponent, RenderTargetComponent });
                 defer window_query.deinit();
 
                 while (window_query.next()) |entity| {
@@ -104,27 +107,19 @@ pub const RenderPlugin = ecs.Plugin.init("render", struct {
                     // end render pass and present the frame
                     render_pass.end();
                     swapchain.present();
+
+                    // push frame info
+                    const window = entity.get(WindowComponent).?;
+                    try registry.pushResource(FrameCount{
+                        .value = self.frame_count,
+                        .window_id = window.handle.id,
+                    });
+                    try registry.pushResource(FrameTime{
+                        .value = frame_time_secs,
+                        .window_id = window.handle.id,
+                    });
                 }
             }
-
-            // push the frame count
-            try registry.clearResource(FrameCount);
-            try registry.pushResource(FrameCount{ .value = self.frame_count });
-
-            // push the frame time
-            try registry.clearResource(FrameTime);
-            try registry.pushResource(FrameTime{ // nanoseconds -> seconds
-                .value = frame_time_secs,
-            });
-        }
-
-        fn elapsedTimeNanos(start_time_nanos: i128) i128 {
-            return std.time.nanoTimestamp() - start_time_nanos;
-        }
-
-        fn elapsedTimeSecs(start_time_nanos: i128) f64 {
-            return @as(f64, @floatFromInt(elapsedTimeNanos(start_time_nanos))) /
-                1_000_000_000.0;
         }
     };
 

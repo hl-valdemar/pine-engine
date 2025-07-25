@@ -48,8 +48,8 @@ pub const App = struct {
 
     /// Register the default resources.
     fn registerDefaultResources(self: *App) !void {
-        try self.registerResource(Event);
-        try self.registerResource(Message);
+        try self.registerResource(Event, .collection);
+        try self.registerResource(Message, .collection);
     }
 
     /// Setup the default pipeline.
@@ -92,10 +92,13 @@ pub const App = struct {
                 };
 
                 // check for shutdown message
-                var message_query = try self.registry.queryResource(Message);
-                defer message_query.deinit();
+                var messages = switch (try self.registry.queryResource(Message)) {
+                    .collection => |col| col,
+                    .single => unreachable,
+                };
+                defer messages.deinit();
 
-                while (message_query.next()) |message| {
+                while (messages.next()) |message| {
                     if (message == .shutdown) {
                         should_quit = true;
                         break;
@@ -132,13 +135,13 @@ pub const App = struct {
     }
 
     /// Register a resource in the app.
-    pub fn registerResource(self: *App, comptime Resource: type) !void {
-        try self.registry.registerResource(Resource);
+    pub fn registerResource(self: *App, comptime R: type, kind: ecs.ResourceKind) !void {
+        try self.registry.registerResource(R, kind);
     }
 
     // FIXME: implement this in pine-ecs instead
-    pub fn resourceRegistered(self: *App, comptime Resource: type) bool {
-        return self.registry.resourceRegistered(Resource);
+    pub fn resourceRegistered(self: *App, comptime R: type) bool {
+        return self.registry.resourceRegistered(R);
     }
 
     /// Add a plugin bundling behavior.
@@ -194,9 +197,9 @@ pub const App = struct {
     pub fn addSystem(
         self: *App,
         stage_path: []const u8,
-        comptime System: type,
+        comptime S: type,
     ) !void {
-        try self.registry.addSystem(stage_path, System);
+        try self.registry.addSystem(stage_path, S);
     }
 
     pub fn addSystems(

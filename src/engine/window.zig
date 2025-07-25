@@ -2,20 +2,17 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const ecs = @import("pine-ecs");
-const pw = @import("pine-window");
 const pg = @import("pine-graphics");
+const pw = @import("pine-window");
+pub const WindowEvent = pw.Event;
 
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
-
-const renderer = @import("render/graphical.zig");
-const RenderPlugin = renderer.RenderPlugin;
+const RenderPlugin = @import("render/graphical.zig").RenderPlugin;
 
 // global window platform object
 // FIXME: should probably be converted to an optional
 var g_platform: pw.Platform = undefined;
-
-pub const WindowEvent = pw.Event;
 
 pub const WindowComponent = struct {
     handle: pw.Window,
@@ -33,7 +30,7 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         g_platform = try pw.Platform.init();
 
         // register the window event
-        try registry.registerResource(WindowEvent);
+        try registry.registerResource(WindowEvent, .collection);
 
         // add window systems to appropriate substages
         try registry.addSystem("update.pre", EventPollingSystem);
@@ -76,10 +73,13 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
 
     const WindowDestructionSystem = struct {
         pub fn process(_: *WindowDestructionSystem, registry: *ecs.Registry) anyerror!void {
-            var message_query = try registry.queryResource(Message);
-            defer message_query.deinit();
+            var messages = switch (try registry.queryResource(Message)) {
+                .collection => |col| col,
+                .single => unreachable,
+            };
+            defer messages.deinit();
 
-            while (message_query.next()) |message| {
+            while (messages.next()) |message| {
                 switch (message) {
                     .close_window => |window_id| {
                         log.debug("got window close event! {any}", .{message});

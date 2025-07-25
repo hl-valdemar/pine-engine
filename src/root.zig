@@ -22,12 +22,17 @@ pub const Color = render.graphical.Color;
 pub const WindowEvent = @import("engine/window.zig").WindowEvent;
 pub const FrameCount = render.graphical.FrameCount;
 pub const FrameTime = render.graphical.FrameTime;
+pub const TimeNanos = time.TimeNanos;
+pub const TimeMicros = time.TimeMicros;
+pub const TimeMillis = time.TimeMillis;
+pub const TimeSecs = time.TimeSecs;
 
 // components
 pub const WindowComponent = @import("engine/window.zig").WindowComponent;
 pub const RenderTargetComponent = render.graphical.RenderTargetComponent;
 
 // plugins
+pub const TimingPlugin = @import("engine/time.zig").TimingPlugin;
 pub const WindowPlugin = @import("engine/window.zig").WindowPlugin;
 pub const RenderPlugin = render.graphical.RenderPlugin;
 pub const RenderTerminalPlugin = render.terminal.RenderTerminalPlugin;
@@ -38,3 +43,4 @@ const std = @import("std");
 const app = @import("engine/app.zig");
 const message = @import("engine/message.zig");
 const render = @import("engine/render/render.zig");
+const time = @import("engine/time.zig");
