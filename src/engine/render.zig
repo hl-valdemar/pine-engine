@@ -5,9 +5,9 @@ const ecs = @import("pine-ecs");
 const pg = @import("pine-graphics");
 const pw = @import("pine-window");
 
-const log = @import("../log.zig");
-const elapsedTimeSecs = @import("../time.zig").elapsedTimeSecs;
-const WindowComponent = @import("../window.zig").WindowComponent;
+const log = @import("log.zig");
+const elapsedTimeSecs = @import("time.zig").elapsedTimeSecs;
+const WindowComponent = @import("window.zig").WindowComponent;
 
 // global graphics context object
 // FIXME: should probably be converted to an optional

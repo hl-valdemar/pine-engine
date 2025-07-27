@@ -12,6 +12,10 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    const term_dep = b.dependency("pine_terminal", .{
+        .target = target,
+        .optimize = optimize,
+    });
     const zm_dep = b.dependency("zm", .{
         .target = target,
         .optimize = optimize,
@@ -27,6 +31,7 @@ pub fn build(b: *std.Build) !void {
     pine_lib_mod.addImport("pine-ecs", ecs_dep.module("pine-ecs"));
     pine_lib_mod.addImport("pine-window", frame_dep.module("pine-window"));
     pine_lib_mod.addImport("pine-graphics", frame_dep.module("pine-graphics"));
+    pine_lib_mod.addImport("pine-terminal", term_dep.module("pine-terminal"));
     pine_lib_mod.addImport("zm", zm_dep.module("zm"));
 
     // create static library

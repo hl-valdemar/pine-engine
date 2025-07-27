@@ -8,7 +8,7 @@ pub const WindowEvent = pw.Event;
 
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
-const RenderPlugin = @import("render/graphical.zig").RenderPlugin;
+const RenderPlugin = @import("render.zig").RenderPlugin;
 
 // global window platform object
 // FIXME: should probably be converted to an optional
@@ -35,6 +35,7 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
         // add window systems to appropriate substages
         try registry.addSystem("update.pre", EventPollingSystem);
         try registry.addSystem("update.post", WindowDestructionSystem);
+        try registry.addSystem("flush", EventClearingSystem);
         try registry.addSystem("cleanup", CleanupSystem);
     }
 
@@ -98,6 +99,12 @@ pub const WindowPlugin = ecs.Plugin.init("window", struct {
                     else => {},
                 }
             }
+        }
+    };
+
+    const EventClearingSystem = struct {
+        pub fn process(_: *EventClearingSystem, registry: *ecs.Registry) anyerror!void {
+            try registry.clearResource(WindowEvent);
         }
     };
 

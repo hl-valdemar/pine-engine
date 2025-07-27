@@ -35,9 +35,10 @@ pub const App = struct {
             }),
         };
 
-        // configure app-critical resources
-        try app.registerDefaultResources();
+        // configure app-critical resources and systems
         try app.setupDefaultPipeline();
+        try app.registerDefaultResources();
+        try app.registerDefaultSystems();
 
         return app;
     }
@@ -52,12 +53,18 @@ pub const App = struct {
         try self.registerResource(Message, .collection);
     }
 
+    /// Register the default systems.
+    fn registerDefaultSystems(self: *App) !void {
+        try self.addSystem("flush", MessageClearingSystem);
+    }
+
     /// Setup the default pipeline.
     fn setupDefaultPipeline(self: *App) !void {
         // set up the default pipeline stages
         try self.addStage("startup", .{});
         try self.addStage("update", .{});
         try self.addStage("render", .{});
+        try self.addStage("flush", .{});
         try self.addStage("cleanup", .{});
 
         // add default substages for update
@@ -105,11 +112,9 @@ pub const App = struct {
                     }
                 }
 
-                // clear all events and messages
-                if (self.resourceRegistered(WindowEvent)) {
-                    self.registry.clearResource(WindowEvent) catch unreachable;
-                }
-                self.registry.clearResource(Message) catch unreachable;
+                self.executeStages(&.{"flush"}) catch |err| {
+                    log.err("flush failed: {}", .{err});
+                };
             }
         }
 
@@ -228,5 +233,11 @@ pub const App = struct {
         operation: ecs.Pipeline.BooleanOperation,
     ) bool {
         return self.registry.stagesEmpty(stage_names, operation);
+    }
+};
+
+const MessageClearingSystem = struct {
+    pub fn process(_: *MessageClearingSystem, registry: *ecs.Registry) anyerror!void {
+        try registry.clearResource(Message);
     }
 };

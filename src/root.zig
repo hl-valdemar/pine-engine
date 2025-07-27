@@ -11,17 +11,18 @@ pub const log = @import("engine/log.zig");
 // bundle pine modules with the pine engine
 pub const ecs = @import("pine-ecs");
 pub const graphics = @import("pine-graphics");
+pub const terminal = @import("pine-terminal");
 pub const window = @import("pine-window");
 
 pub const App = app.App;
 pub const AppDesc = app.AppDesc;
 pub const Message = message.Message;
-pub const Color = render.graphical.Color;
+pub const Color = render.Color;
 
 // resources
 pub const WindowEvent = @import("engine/window.zig").WindowEvent;
-pub const FrameCount = render.graphical.FrameCount;
-pub const FrameTime = render.graphical.FrameTime;
+pub const FrameCount = render.FrameCount;
+pub const FrameTime = render.FrameTime;
 pub const TimeNanos = time.TimeNanos;
 pub const TimeMicros = time.TimeMicros;
 pub const TimeMillis = time.TimeMillis;
@@ -29,18 +30,21 @@ pub const TimeSecs = time.TimeSecs;
 
 // components
 pub const WindowComponent = @import("engine/window.zig").WindowComponent;
-pub const RenderTargetComponent = render.graphical.RenderTargetComponent;
+pub const RenderTargetComponent = render.RenderTargetComponent;
+pub const TermPositionComponent = term.TermPositionComponent;
+pub const TermSpriteComponent = term.TermSpriteComponent;
 
 // plugins
 pub const TimingPlugin = @import("engine/time.zig").TimingPlugin;
 pub const WindowPlugin = @import("engine/window.zig").WindowPlugin;
-pub const RenderPlugin = render.graphical.RenderPlugin;
-pub const RenderTerminalPlugin = render.terminal.RenderTerminalPlugin;
+pub const RenderPlugin = render.RenderPlugin;
+pub const RenderTerminalPlugin = term.RenderTerminalPlugin;
 
 // private imports //
 
 const std = @import("std");
 const app = @import("engine/app.zig");
 const message = @import("engine/message.zig");
-const render = @import("engine/render/render.zig");
+const render = @import("engine/render.zig");
 const time = @import("engine/time.zig");
+const term = @import("engine/terminal.zig");
