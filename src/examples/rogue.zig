@@ -140,18 +140,20 @@ const PlayerMoveSystem = struct {
                         var can_walk_up = true;
                         var can_walk_down = true;
 
+                        // check if the player brushes up against a wall
                         while (wall_positions.next()) |wall_position| {
                             const wall = wall_position.get(pine.TermPositionComponent).?;
 
-                            if (wall.x == player.x - 1) {
+                            if (wall.x == player.x - 1 and wall.y == player.y) {
                                 can_walk_left = false;
-                            } else if (wall.x == player.x + 1) {
+                            }
+                            if (wall.x == player.x + 1 and wall.y == player.y) {
                                 can_walk_right = false;
                             }
-
-                            if (wall.y == player.y - 1) {
+                            if (wall.x == player.x and wall.y == player.y - 1) {
                                 can_walk_up = false;
-                            } else if (wall.y == player.y + 1) {
+                            }
+                            if (wall.x == player.x and wall.y == player.y + 1) {
                                 can_walk_down = false;
                             }
                         }
