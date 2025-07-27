@@ -45,8 +45,8 @@
             .hash = "pine_frame-0.0.0-Y5jKRbduAQApFL5XKGOU0cM6vr7RuE1vCXuHyn2pU6fd",
         },
         .pine_ecs = .{
-            .url = "git+https://github.com/hl-valdemar/pine-ecs#a77564242cf888c13d8e9e547df79d64f3ae3c56",
-            .hash = "pine_ecs-0.4.0-4KYRKMzQAQDmaTCX7n8HpELncOV0q_bZzqdohhtc-M30",
+            .url = "git+https://github.com/hl-valdemar/pine-ecs#87d18fec27c531b46dbbe7083d3923304131d161",
+            .hash = "pine_ecs-0.4.0-4KYRKKnRAQDdHc2OS9zfBp5F87KaOCGie52oyn0W7e3A",
         },
         .pine_terminal = .{
             .url = "git+https://github.com/hl-valdemar/pine-terminal#5074c2e4f0c961b2965d83844bda7f006342bd74",
