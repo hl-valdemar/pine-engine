@@ -10,7 +10,7 @@ pub const TermPositionComponent = struct {
 };
 
 pub const TermSpriteComponent = struct {
-    symbol: u8,
+    symbol: u21,
     color: pterm.TermColor,
 };
 
@@ -25,7 +25,9 @@ pub const RenderTerminalPlugin = pecs.Plugin.init("render-terminal", struct {
         try registry.addSystem("startup", InitSystem);
         try registry.addSystem("update.pre", EventPollingSystem);
         try registry.addSystem("flush", EventClearingSystem);
+        try registry.addSystem("render.pre", PreRenderSystem);
         try registry.addSystem("render.main", RenderSystem);
+        try registry.addSystem("render.post", PostRenderSystem);
     }
 
     const InitSystem = struct {
@@ -50,14 +52,23 @@ pub const RenderTerminalPlugin = pecs.Plugin.init("render-terminal", struct {
         }
     };
 
-    const RenderSystem = struct {
-        pub fn process(_: *RenderSystem, registry: *pecs.Registry) anyerror!void {
+    const PreRenderSystem = struct {
+        pub fn process(_: *PreRenderSystem, registry: *pecs.Registry) anyerror!void {
             var screen = switch (try registry.queryResource(pterm.Screen)) {
                 .single => |screen| if (screen.resource) |res| res else return error.ScreenResourceNull,
                 .collection => unreachable,
             };
 
             screen.clear();
+        }
+    };
+
+    const RenderSystem = struct {
+        pub fn process(_: *RenderSystem, registry: *pecs.Registry) anyerror!void {
+            var screen = switch (try registry.queryResource(pterm.Screen)) {
+                .single => |screen| if (screen.resource) |res| res else return error.ScreenResourceNull,
+                .collection => unreachable,
+            };
 
             var renderables = try registry.queryComponents(.{ TermPositionComponent, TermSpriteComponent });
             defer renderables.deinit();
@@ -68,8 +79,20 @@ pub const RenderTerminalPlugin = pecs.Plugin.init("render-terminal", struct {
 
                 screen.setCell(position.x, position.y, sprite.symbol, sprite.color);
             }
+        }
+    };
+
+    const PostRenderSystem = struct {
+        pub fn process(_: *PostRenderSystem, registry: *pecs.Registry) anyerror!void {
+            var screen = switch (try registry.queryResource(pterm.Screen)) {
+                .single => |screen| if (screen.resource) |res| res else return error.ScreenResourceNull,
+                .collection => unreachable,
+            };
 
             try screen.render();
+
+            // small delay to avoid flicker
+            std.time.sleep(5_000_000); // 5ms
         }
     };
 
