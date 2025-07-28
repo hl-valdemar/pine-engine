@@ -55,8 +55,8 @@ pub const RenderTerminalPlugin = pecs.Plugin.init("render-terminal", struct {
     const PreRenderSystem = struct {
         pub fn process(_: *PreRenderSystem, registry: *pecs.Registry) anyerror!void {
             var screen = switch (try registry.queryResource(pterm.Screen)) {
-                .single => |screen| if (screen.resource) |res| res else return error.ScreenResourceNull,
-                .collection => unreachable,
+                .single => |screen| screen.resource orelse return error.ScreenResourceNull,
+                .collection => return error.InvalidResource,
             };
 
             screen.clear();
@@ -66,8 +66,8 @@ pub const RenderTerminalPlugin = pecs.Plugin.init("render-terminal", struct {
     const RenderSystem = struct {
         pub fn process(_: *RenderSystem, registry: *pecs.Registry) anyerror!void {
             var screen = switch (try registry.queryResource(pterm.Screen)) {
-                .single => |screen| if (screen.resource) |res| res else return error.ScreenResourceNull,
-                .collection => unreachable,
+                .single => |screen| screen.resource orelse return error.ScreenResourceNull,
+                .collection => return error.InvalidResource,
             };
 
             var renderable_query = try registry.queryComponents(.{ TermPositionComponent, TermSpriteComponent });
@@ -85,8 +85,8 @@ pub const RenderTerminalPlugin = pecs.Plugin.init("render-terminal", struct {
     const PostRenderSystem = struct {
         pub fn process(_: *PostRenderSystem, registry: *pecs.Registry) anyerror!void {
             var screen = switch (try registry.queryResource(pterm.Screen)) {
-                .single => |screen| if (screen.resource) |res| res else return error.ScreenResourceNull,
-                .collection => unreachable,
+                .single => |screen| screen.resource orelse return error.ScreenResourceNull,
+                .collection => return error.InvalidResource,
             };
 
             try screen.render();
@@ -99,8 +99,8 @@ pub const RenderTerminalPlugin = pecs.Plugin.init("render-terminal", struct {
     const EventPollingSystem = struct {
         pub fn process(_: *EventPollingSystem, registry: *pecs.Registry) anyerror!void {
             var term = switch (try registry.queryResource(pterm.Terminal)) {
-                .single => |term| if (term.resource) |res| res else return error.TermResourceNull,
-                .collection => unreachable,
+                .single => |term| term.resource orelse return error.TermResourceNull,
+                .collection => return error.InvalidResource,
             };
 
             // push events to the registry

@@ -85,10 +85,6 @@ const LightSourceComponent = struct {
 };
 
 const SetupSystem = struct {
-    pub fn init(_: Allocator) anyerror!SetupSystem {
-        return SetupSystem{};
-    }
-
     pub fn process(_: *SetupSystem, registry: *pine.ecs.Registry) anyerror!void {
         // spawn the map
         try spawn_map(registry);
