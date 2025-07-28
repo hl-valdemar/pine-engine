@@ -33,7 +33,6 @@ const HealthComponent = struct {
     hp: u8,
 };
 
-const WalkableComponent = struct {};
 const UnwalkableComponent = struct {};
 
 const TileComponent = enum {
@@ -88,9 +87,6 @@ const SetupSystem = struct {
     pub fn process(_: *SetupSystem, registry: *pine.ecs.Registry) anyerror!void {
         // spawn the map
         try spawn_map(registry);
-
-        // spawn the lights sources
-        // try spawn_light_sources(registry);
 
         // spawn the player
         const player_pos: struct {
@@ -177,79 +173,46 @@ const SetupSystem = struct {
         // spawn tile entities
         for (0..MAP_HEIGHT) |y| {
             for (0..MAP_WIDTH) |x| {
-                const appearance = map[y][x].getAppearance();
-                switch (map[y][x]) {
+                const tile = map[y][x];
+                const appearance = tile.getAppearance();
+
+                const position =
+                    pine.TermPositionComponent{
+                        .x = @intCast(x),
+                        .y = @intCast(y),
+                    };
+
+                const sprite =
+                    pine.TermSpriteComponent{
+                        .symbol = appearance.symbol,
+                        .color = appearance.color,
+                    };
+
+                switch (tile) {
                     .wall => _ = try registry.spawn(.{
-                        map[y][x], // tile component
-                        pine.TermPositionComponent{
-                            .x = @intCast(x),
-                            .y = @intCast(y),
-                        },
-                        pine.TermSpriteComponent{
-                            .symbol = appearance.symbol,
-                            .color = appearance.color,
-                        },
+                        tile,
+                        position,
+                        sprite,
                         UnwalkableComponent{},
                     }),
+                    .torch => _ = try registry.spawn(.{
+                        tile,
+                        position,
+                        sprite,
+                        LightSourceComponent{
+                            .intensity = 8,
+                            .color = .{ .r = 255, .g = 150, .b = 50 },
+                            .flicker = true,
+                        },
+                    }),
                     else => _ = try registry.spawn(.{
-                        map[y][x], // tile component
-                        pine.TermPositionComponent{
-                            .x = @intCast(x),
-                            .y = @intCast(y),
-                        },
-                        pine.TermSpriteComponent{
-                            .symbol = appearance.symbol,
-                            .color = appearance.color,
-                        },
-                        WalkableComponent{},
+                        tile,
+                        position,
+                        sprite,
                     }),
                 }
             }
         }
-    }
-
-    fn spawn_light_sources(registry: *pine.ecs.Registry) !void {
-        _ = try registry.spawn(.{
-            LightSourceComponent{
-                .intensity = 8,
-                .color = .{ .r = 255, .g = 150, .b = 50 },
-                .flicker = true,
-            },
-            pine.TermPositionComponent{ .x = 11, .y = 5 },
-        });
-        _ = try registry.spawn(.{
-            LightSourceComponent{
-                .intensity = 8,
-                .color = .{ .r = 255, .g = 150, .b = 50 },
-                .flicker = true,
-            },
-            pine.TermPositionComponent{
-                .x = 18,
-                .y = 5,
-            },
-        });
-        _ = try registry.spawn(.{
-            LightSourceComponent{
-                .intensity = 8,
-                .color = .{ .r = 255, .g = 150, .b = 50 },
-                .flicker = true,
-            },
-            pine.TermPositionComponent{
-                .x = 11,
-                .y = 15,
-            },
-        });
-        _ = try registry.spawn(.{
-            LightSourceComponent{
-                .intensity = 8,
-                .color = .{ .r = 255, .g = 150, .b = 50 },
-                .flicker = true,
-            },
-            pine.TermPositionComponent{
-                .x = 18,
-                .y = 15,
-            },
-        });
     }
 };
 
@@ -370,6 +333,35 @@ const LightingSystem = struct {
     }
 
     pub fn process(self: *LightingSystem, registry: *pine.ecs.Registry) anyerror!void {
+        // first, apply base darkness to all tiles
+        var tile_query = try registry.queryComponents(.{ pine.TermPositionComponent, pine.TermSpriteComponent, TileComponent });
+        defer tile_query.deinit();
+
+        // store original colors and apply darkness
+        while (tile_query.next()) |tile| {
+            const tile_sprite = tile.get(pine.TermSpriteComponent).?;
+            const tile_type = tile.get(TileComponent).?;
+            const tile_appearance = tile_type.getAppearance();
+
+            // start with darkened base colors
+            var base_fg = switch (tile_appearance.color.fg) {
+                .rgb => |rgb| rgb,
+                .palette => pine.terminal.colors.palette256ToRgb(tile_appearance.color.fg.palette),
+            };
+            var base_bg = switch (tile_appearance.color.bg) {
+                .rgb => |rgb| rgb,
+                .palette => pine.terminal.colors.palette256ToRgb(tile_appearance.color.bg.palette),
+            };
+
+            // apply darkness
+            base_fg = pine.terminal.colors.darken(base_fg, 0.8);
+            base_bg = pine.terminal.colors.darken(base_bg, 0.9);
+
+            // set the darkened color as base
+            tile_sprite.color = pine.terminal.TermColor.fromRGB(base_fg, base_bg);
+        }
+
+        // then, for each light source, add its contribution
         var light_query = try registry.queryComponents(.{ pine.TermPositionComponent, LightSourceComponent });
         defer light_query.deinit();
 
@@ -377,38 +369,29 @@ const LightingSystem = struct {
             const light_pos = light.get(pine.TermPositionComponent).?;
             const light_properties = light.get(LightSourceComponent).?;
 
-            var tile_query = try registry.queryComponents(.{ pine.TermPositionComponent, pine.TermSpriteComponent, TileComponent });
-            defer tile_query.deinit();
+            var intensity = light_properties.intensity;
+            if (light_properties.flicker) {
+                intensity += @sin(self.time * 10.0 + @as(f32, @floatFromInt(light_pos.x * 7 + light_pos.y * 13))) * 1.0;
+            }
 
-            while (tile_query.next()) |tile| {
-                const tile_sprite = tile.get(pine.TermSpriteComponent).?;
+            // apply this light's contribution to nearby tiles
+            var affected_tiles = try registry.queryComponents(.{ pine.TermPositionComponent, pine.TermSpriteComponent, TileComponent });
+            defer affected_tiles.deinit();
+
+            while (affected_tiles.next()) |tile| {
                 const tile_pos = tile.get(pine.TermPositionComponent).?;
-                const tile_type = tile.get(TileComponent).?;
-                const tile_appearance = tile_type.getAppearance();
+                const tile_sprite = tile.get(pine.TermSpriteComponent).?;
+                const tile_kind = tile.get(TileComponent).?;
 
-                // apply lighting
-                var lit_fg = switch (tile_appearance.color.fg) {
+                // get current color
+                var current_fg = switch (tile_sprite.color.fg) {
                     .rgb => |rgb| rgb,
-                    .palette => pine.terminal.colors.palette256ToRgb(tile_appearance.color.fg.palette),
-                };
-                var lit_bg = switch (tile_appearance.color.bg) {
-                    .rgb => |rgb| rgb,
-                    .palette => pine.terminal.colors.palette256ToRgb(tile_appearance.color.bg.palette),
+                    .palette => pine.terminal.colors.palette256ToRgb(tile_sprite.color.fg.palette),
                 };
 
-                // start with darkness
-                lit_fg = pine.terminal.colors.darken(lit_fg, 0.8);
-                lit_bg = pine.terminal.colors.darken(lit_bg, 0.9);
-
-                var intensity = light_properties.intensity;
-
-                // add flicker effect
-                if (light_properties.flicker) {
-                    intensity += @sin(self.time * 10.0 + @as(f32, @floatFromInt(light_pos.x + light_pos.y))) * 1.5;
-                }
-
-                const light_color = pine.terminal.colors.calculateLighting(
-                    lit_fg,
+                // calculate and add this light's contribution
+                const light_contribution = pine.terminal.colors.calculateLighting(
+                    current_fg,
                     .{
                         .x = @intCast(light_pos.x),
                         .y = @intCast(light_pos.y),
@@ -418,22 +401,28 @@ const LightingSystem = struct {
                     .{ .x = @intCast(tile_pos.x), .y = @intCast(tile_pos.y) },
                 );
 
-                lit_fg = light_color;
+                // blend the contribution with current color (additive lighting)
+                current_fg = pine.terminal.colors.blendRgb(current_fg, light_contribution, 0.5);
+
+                // update the tile color
+                const current_bg = switch (tile_sprite.color.bg) {
+                    .rgb => |rgb| rgb,
+                    .palette => pine.terminal.colors.palette256ToRgb(tile_sprite.color.bg.palette),
+                };
+                tile_sprite.color = pine.terminal.TermColor.fromRGB(current_fg, current_bg);
 
                 // special effects for certain tiles
-                if (tile_type.* == .water) {
+                if (tile_kind.* == .water) {
                     // animate water
-                    const wave = @sin(self.time * 2.0 + @as(f64, @floatFromInt(tile_pos.x + tile_pos.y))) * 0.2 + 0.5;
-                    lit_fg = pine.terminal.colors.lighten(lit_fg, @as(f32, @floatCast(wave)) * 0.3);
+                    const wave = @sin(self.time * 2.0 + @as(f32, @floatFromInt(tile_pos.x + tile_pos.y))) * 0.2 + 0.5;
+                    current_fg = pine.terminal.colors.lighten(current_fg, wave * 0.3);
                     tile_sprite.symbol = if (wave > 0.5) '≈' else '~';
                 }
-
-                tile_sprite.color = pine.terminal.TermColor.fromRGB(lit_fg, lit_bg);
             }
         }
 
-        // update time for animations
-        self.time += 0.006125;
+        // update time more slowly
+        self.time += 0.006125; // TODO: use proper delta time
     }
 };
 
