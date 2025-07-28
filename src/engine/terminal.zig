@@ -70,10 +70,10 @@ pub const RenderTerminalPlugin = pecs.Plugin.init("render-terminal", struct {
                 .collection => unreachable,
             };
 
-            var renderables = try registry.queryComponents(.{ TermPositionComponent, TermSpriteComponent });
-            defer renderables.deinit();
+            var renderable_query = try registry.queryComponents(.{ TermPositionComponent, TermSpriteComponent });
+            defer renderable_query.deinit();
 
-            while (renderables.next()) |renderable| {
+            while (renderable_query.next()) |renderable| {
                 const position = renderable.get(TermPositionComponent).?;
                 const sprite = renderable.get(TermSpriteComponent).?;
 
@@ -91,7 +91,7 @@ pub const RenderTerminalPlugin = pecs.Plugin.init("render-terminal", struct {
 
             try screen.render();
 
-            // small delay to avoid flicker
+            // small delay to avoid screen flicker
             std.time.sleep(5_000_000); // 5ms
         }
     };

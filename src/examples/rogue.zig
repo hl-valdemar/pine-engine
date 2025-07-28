@@ -41,6 +41,7 @@ const TileComponent = enum {
     water,
     grass,
     torch,
+    player,
 
     const Appearance = struct {
         symbol: u21,
@@ -69,6 +70,10 @@ const TileComponent = enum {
                 .{ .r = 255, .g = 200, .b = 0 },
                 .{ .r = 100, .g = 50, .b = 0 },
             ) },
+            .player => .{ .symbol = '@', .color = pine.terminal.TermColor.fromRGB(
+                pine.terminal.colors.white.rgb,
+                pine.terminal.colors.black.rgb,
+            ) },
         };
     }
 };
@@ -94,6 +99,10 @@ const SetupSystem = struct {
             y: u16,
         } = .{ .x = 5, .y = 5 };
 
+        // somewhat hacky fix to a lighting problem
+        const tile: TileComponent = .player;
+        const appearance = tile.getAppearance();
+
         _ = try registry.spawn(.{
             PlayerComponent{},
             HealthComponent{ .hp = 10 },
@@ -102,17 +111,15 @@ const SetupSystem = struct {
                 .y = player_pos.y,
             },
             pine.TermSpriteComponent{
-                .symbol = '@',
-                .color = pine.terminal.TermColor.fromRGB(
-                    pine.terminal.colors.white.rgb,
-                    pine.terminal.colors.dark_gray.rgb,
-                ),
+                .symbol = appearance.symbol,
+                .color = appearance.color,
             },
             LightSourceComponent{
                 .intensity = 5,
                 .color = .{ .r = 200, .g = 200, .b = 150 },
                 .flicker = false,
             },
+            tile,
         });
     }
 
@@ -131,6 +138,7 @@ const SetupSystem = struct {
 
         // add some features
         // walls around the edge
+
         for (0..MAP_WIDTH) |x| {
             map[0][x] = .wall;
             map[MAP_HEIGHT - 1][x] = .wall;
@@ -171,6 +179,7 @@ const SetupSystem = struct {
         map[15][18] = .torch;
 
         // spawn tile entities
+        const Y_OFF = 1;
         for (0..MAP_HEIGHT) |y| {
             for (0..MAP_WIDTH) |x| {
                 const tile = map[y][x];
@@ -179,7 +188,7 @@ const SetupSystem = struct {
                 const position =
                     pine.TermPositionComponent{
                         .x = @intCast(x),
-                        .y = @intCast(y),
+                        .y = @intCast(y + Y_OFF),
                     };
 
                 const sprite =
@@ -224,7 +233,10 @@ const PlayerMoveSystem = struct {
         };
         defer key_events.deinit();
 
-        var player_query = try registry.queryComponents(.{ pine.TermPositionComponent, LightSourceComponent, PlayerComponent });
+        var player_query = try registry.queryComponents(.{
+            pine.TermPositionComponent,
+            PlayerComponent,
+        });
         defer player_query.deinit();
 
         while (player_query.next()) |player| {
@@ -233,7 +245,10 @@ const PlayerMoveSystem = struct {
             while (key_events.next()) |event| {
                 switch (event) {
                     .arrow => |arrow| {
-                        var wall_positions = try registry.queryComponents(.{ pine.TermPositionComponent, UnwalkableComponent });
+                        var wall_positions = try registry.queryComponents(.{
+                            pine.TermPositionComponent,
+                            UnwalkableComponent,
+                        });
                         defer wall_positions.deinit();
 
                         var can_walk_left = true;
@@ -297,7 +312,16 @@ const PlayerHudSystem = struct {
         };
 
         const ui_y = 0;
-        screen.drawString(0, ui_y, "Health: ", pine.terminal.TermColor.fromPalette(7, 0));
+        const hp_tag = "hp: ";
+        screen.drawString(0, ui_y, hp_tag, pine.terminal.TermColor.fromRGB(
+            pine.terminal.colors.gray.rgb,
+            pine.terminal.colors.black.rgb,
+        ));
+
+        // const hp_bar_symbol = '■';
+        // const hp_bar_symbol = '◦';
+        // const hp_bar_symbol = '-';
+        const hp_bar_symbol = '=';
 
         const health_percent: f32 = 0.75; // 75% health
         const bar_width = 20;
@@ -311,12 +335,12 @@ const PlayerHudSystem = struct {
                     .{ .r = 229, .g = 57, .b = 53 }, // red
                     gradient_pos,
                 );
-                screen.setCell(8 + @as(u16, @intCast(i)), ui_y, '█', pine.terminal.TermColor.fromRGB(
+                screen.setCell(@as(u16, @intCast(hp_tag.len + i)), ui_y, hp_bar_symbol, pine.terminal.TermColor.fromRGB(
                     bar_color,
-                    .{ .r = 0, .g = 0, .b = 0 },
+                    pine.terminal.colors.black.rgb,
                 ));
             } else {
-                screen.setCell(8 + @as(u16, @intCast(i)), ui_y, '█', pine.terminal.TermColor.fromRGB(
+                screen.setCell(@as(u16, @intCast(hp_tag.len + i)), ui_y, hp_bar_symbol, pine.terminal.TermColor.fromRGB(
                     pine.terminal.colors.dark_gray.rgb,
                     pine.terminal.colors.black.rgb,
                 ));
@@ -375,7 +399,11 @@ const LightingSystem = struct {
             }
 
             // apply this light's contribution to nearby tiles
-            var affected_tiles = try registry.queryComponents(.{ pine.TermPositionComponent, pine.TermSpriteComponent, TileComponent });
+            var affected_tiles = try registry.queryComponents(.{
+                pine.TermPositionComponent,
+                pine.TermSpriteComponent,
+                TileComponent,
+            });
             defer affected_tiles.deinit();
 
             while (affected_tiles.next()) |tile| {
@@ -390,7 +418,7 @@ const LightingSystem = struct {
                 };
 
                 // calculate and add this light's contribution
-                const light_contribution = pine.terminal.colors.calculateLighting(
+                const light_contribution = calculateLighting(
                     current_fg,
                     .{
                         .x = @intCast(light_pos.x),
@@ -444,3 +472,27 @@ const ShutdownSystem = struct {
         }
     }
 };
+
+// utility: dynamic lighting effect
+pub fn calculateLighting(
+    base_color: pine.terminal.ColorRGB,
+    light_source: struct { x: i16, y: i16, intensity: f32, color: pine.terminal.ColorRGB },
+    cell_pos: struct { x: i16, y: i16 },
+) pine.terminal.ColorRGB {
+    const dx = @as(f32, @floatFromInt(cell_pos.x - light_source.x));
+    const dy = @as(f32, @floatFromInt(cell_pos.y - light_source.y));
+    const distance = @sqrt(dx * dx + (dy * 2) * (dy * 2));
+
+    // calculate falloff
+    const falloff = std.math.clamp(1.0 - (distance / light_source.intensity), 0.0, 1.0);
+
+    if (falloff <= 0.0) {
+        return base_color;
+    }
+
+    // blend light color with base color
+    const lit_color = pine.terminal.colors.blendRgb(base_color, light_source.color, falloff * 0.5);
+
+    // apply brightness
+    return pine.terminal.colors.lighten(lit_color, falloff * 0.3);
+}
