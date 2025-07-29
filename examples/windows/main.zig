@@ -36,7 +36,7 @@ pub fn main() !void {
 const SetupSystem = struct {
     pub fn process(_: *SetupSystem, registry: *ecs.Registry) anyerror!void {
         // create the window component
-        var window = try pine.WindowComponent.init(.{
+        var window = try pine.component.Window.init(.{
             .width = 500,
             .height = 500,
             .position = .{ .center = true },
@@ -44,7 +44,7 @@ const SetupSystem = struct {
         });
 
         // create the render target
-        const render_target = try pine.RenderTargetComponent.init(&window.handle, .{
+        const render_target = try pine.component.RenderTarget.init(&window.handle, .{
             .clear_color = .{ .r = 0.9, .g = 0.3, .b = 0.3, .a = 1.0 },
         });
 
@@ -63,11 +63,11 @@ const UpdateClearColorSystem = struct {
         };
 
         // update the clear color accordingly for all render targets
-        var target_query = try registry.queryComponents(.{pine.RenderTargetComponent});
+        var target_query = try registry.queryComponents(.{pine.component.RenderTarget});
         defer target_query.deinit();
 
         while (target_query.next()) |entity| {
-            const target = entity.get(pine.RenderTargetComponent).?;
+            const target = entity.get(pine.component.RenderTarget).?;
             target.clear_color.r = @sin(@as(f32, @floatFromInt(millis.value)) * 0.01) * 0.5 + 0.5;
         }
 
@@ -137,7 +137,7 @@ const InputSystem = struct {
                             const y = rand.intRangeAtMost(u16, 250, 750);
 
                             // create the window
-                            var window = try pine.WindowComponent.init(.{
+                            var window = try pine.component.Window.init(.{
                                 .width = width,
                                 .height = height,
                                 .position = .{ .x = x, .y = y },
@@ -145,7 +145,7 @@ const InputSystem = struct {
                             });
 
                             // create the render target
-                            const render_target = try pine.RenderTargetComponent.init(&window.handle, .{
+                            const render_target = try pine.component.RenderTarget.init(&window.handle, .{
                                 .clear_color = .{ .r = 0.9, .g = 0.3, .b = 0.3, .a = 1.0 },
                             });
 

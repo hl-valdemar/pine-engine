@@ -29,10 +29,12 @@ pub const TimeMillis = time.TimeMillis;
 pub const TimeSecs = time.TimeSecs;
 
 // components
-pub const WindowComponent = @import("engine/window.zig").WindowComponent;
-pub const RenderTargetComponent = render.RenderTargetComponent;
-pub const TermPositionComponent = term.TermPositionComponent;
-pub const TermSpriteComponent = term.TermSpriteComponent;
+pub const component = struct {
+    pub const Window = @import("engine/window.zig").WindowComponent;
+    pub const RenderTarget = render.RenderTargetComponent;
+    pub const TermPosition = term.TermPositionComponent;
+    pub const TermSprite = term.TermSpriteComponent;
+};
 
 // plugins
 pub const TimingPlugin = @import("engine/time.zig").TimingPlugin;
