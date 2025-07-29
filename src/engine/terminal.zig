@@ -28,6 +28,7 @@ pub const RenderTerminalPlugin = pecs.Plugin.init("render-terminal", struct {
         try registry.addSystem("render.pre", PreRenderSystem);
         try registry.addSystem("render.main", RenderSystem);
         try registry.addSystem("render.post", PostRenderSystem);
+        try registry.addSystem("cleanup", CleanupSystem);
     }
 
     const InitSystem = struct {
@@ -116,6 +117,13 @@ pub const RenderTerminalPlugin = pecs.Plugin.init("render-terminal", struct {
     const EventClearingSystem = struct {
         pub fn process(_: *EventClearingSystem, registry: *pecs.Registry) anyerror!void {
             try registry.clearResource(pterm.KeyEvent);
+        }
+    };
+
+    const CleanupSystem = struct {
+        pub fn process(_: *CleanupSystem, registry: *pecs.Registry) anyerror!void {
+            try registry.clearResource(pterm.Terminal);
+            try registry.clearResource(pterm.Screen);
         }
     };
 }.init);

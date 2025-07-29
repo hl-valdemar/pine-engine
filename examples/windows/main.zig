@@ -57,20 +57,18 @@ const SetupSystem = struct {
 /// It'll be registered to run in the update's main stage, querying frame count on each update cycle.
 const UpdateClearColorSystem = struct {
     pub fn process(_: *UpdateClearColorSystem, registry: *ecs.Registry) anyerror!void {
-        const time_millis = switch (try registry.queryResource(pine.TimeMillis)) {
-            .single => |time| time,
-            .collection => unreachable,
+        const millis = switch (try registry.queryResource(pine.TimeMillis)) {
+            .single => |time| time.resource orelse return error.InvalidResource,
+            .collection => return error.InvalidResource,
         };
 
         // update the clear color accordingly for all render targets
-        if (time_millis.resource) |millis| {
-            var target_query = try registry.queryComponents(.{pine.RenderTargetComponent});
-            defer target_query.deinit();
+        var target_query = try registry.queryComponents(.{pine.RenderTargetComponent});
+        defer target_query.deinit();
 
-            while (target_query.next()) |entity| {
-                const target = entity.get(pine.RenderTargetComponent).?;
-                target.clear_color.r = @sin(@as(f32, @floatFromInt(millis.value)) * 0.01) * 0.5 + 0.5;
-            }
+        while (target_query.next()) |entity| {
+            const target = entity.get(pine.RenderTargetComponent).?;
+            target.clear_color.r = @sin(@as(f32, @floatFromInt(millis.value)) * 0.01) * 0.5 + 0.5;
         }
 
         // // log frame time
@@ -103,14 +101,14 @@ const InputSystem = struct {
         const rand = self.prng.random();
 
         // query for system events
-        var events = switch (try registry.queryResource(pine.WindowEvent)) {
+        var event_query = switch (try registry.queryResource(pine.WindowEvent)) {
             .collection => |col| col,
             .single => unreachable,
         };
-        defer events.deinit();
+        defer event_query.deinit();
 
         // react accordingly
-        while (events.next()) |event| {
+        while (event_query.next()) |event| {
             switch (event) {
                 .key_up => |key_event| {
                     switch (key_event.key) {

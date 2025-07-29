@@ -41,16 +41,16 @@
             .hash = "zm-0.3.0-cLX-WY3PAABvjPwxqDx9GZkMixyyrlHueLZTxpGy3kLE",
         },
         .pine_frame = .{
-            .url = "git+https://github.com/hl-valdemar/pine-frame#e08fa6a6f345a7a47e7e2ebbd6eaa5eba840b0d6",
-            .hash = "pine_frame-0.0.0-Y5jKRbduAQApFL5XKGOU0cM6vr7RuE1vCXuHyn2pU6fd",
+            .url = "git+https://github.com/hl-valdemar/pine-frame#5fea4d402ac640b84aa110d752f3ee94152de497",
+            .hash = "pine_frame-0.0.0-Y5jKRbkvAQAeGxx2lQBlH1vDQQrWUNDIFmDo4F2P0kN5",
         },
         .pine_ecs = .{
-            .url = "git+https://github.com/hl-valdemar/pine-ecs#87d18fec27c531b46dbbe7083d3923304131d161",
-            .hash = "pine_ecs-0.4.0-4KYRKKnRAQDdHc2OS9zfBp5F87KaOCGie52oyn0W7e3A",
+            .url = "git+https://github.com/hl-valdemar/pine-ecs#45f43646b2978982ee2eba68460ed0bb8210f09b",
+            .hash = "pine_ecs-0.4.0-4KYRKLtmAQDT3mPTtRtp1faSYsHE3YmQNXCmeajoPmhK",
         },
         .pine_terminal = .{
-            .url = "git+https://github.com/hl-valdemar/pine-terminal#5074c2e4f0c961b2965d83844bda7f006342bd74",
-            .hash = "pine_terminal-0.0.0-engfSdSUAACvgTNnzZLFKLHEHpe7hpWmINno9CvN4G7X",
+            .url = "git+https://github.com/hl-valdemar/pine-terminal#c8cfdc86b3dcac283d7c6fafd3222b42cd3d78cc",
+            .hash = "pine_terminal-0.0.0-engfSUiJAAB2mXzMZuMb5-PsUsVPrAomBSloiXx_1d_i",
         },
     },
     .paths = .{

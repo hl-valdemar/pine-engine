@@ -70,10 +70,13 @@ const TileComponent = enum {
                 .{ .r = 255, .g = 200, .b = 0 },
                 .{ .r = 100, .g = 50, .b = 0 },
             ) },
-            .player => .{ .symbol = '@', .color = pine.terminal.TermColor.fromRGB(
-                pine.terminal.colors.white.rgb,
-                pine.terminal.colors.black.rgb,
-            ) },
+            .player => .{
+                .symbol = '@',
+                .color = pine.terminal.TermColor.fromRGB(
+                    .{ .r = 255, .g = 215, .b = 0 }, // golden glow
+                    pine.terminal.colors.black.rgb,
+                ),
+            },
         };
     }
 };
@@ -112,7 +115,7 @@ const SetupSystem = struct {
             },
             LightSourceComponent{
                 .intensity = 5,
-                .color = .{ .r = 200, .g = 200, .b = 150 },
+                .color = appearance.color.fg.rgb,
                 .flicker = false,
             },
             tile,
@@ -223,11 +226,11 @@ const SetupSystem = struct {
 
 const PlayerMoveSystem = struct {
     pub fn process(_: *PlayerMoveSystem, registry: *pine.ecs.Registry) anyerror!void {
-        var key_events = switch (try registry.queryResource(pine.terminal.KeyEvent)) {
+        var event_query = switch (try registry.queryResource(pine.terminal.KeyEvent)) {
             .collection => |col| col,
             .single => unreachable,
         };
-        defer key_events.deinit();
+        defer event_query.deinit();
 
         var player_query = try registry.queryComponents(.{
             pine.TermPositionComponent,
@@ -238,14 +241,14 @@ const PlayerMoveSystem = struct {
         while (player_query.next()) |player| {
             const p_pos = player.get(pine.TermPositionComponent).?;
 
-            while (key_events.next()) |event| {
-                switch (event) {
+            while (event_query.next()) |key_event| {
+                switch (key_event) {
                     .arrow => |arrow| {
-                        var wall_positions = try registry.queryComponents(.{
+                        var wall_query = try registry.queryComponents(.{
                             pine.TermPositionComponent,
                             UnwalkableComponent,
                         });
-                        defer wall_positions.deinit();
+                        defer wall_query.deinit();
 
                         var can_walk_left = true;
                         var can_walk_right = true;
@@ -253,7 +256,7 @@ const PlayerMoveSystem = struct {
                         var can_walk_down = true;
 
                         // check if the player brushes up against a wall
-                        while (wall_positions.next()) |wall_position| {
+                        while (wall_query.next()) |wall_position| {
                             const wall = wall_position.get(pine.TermPositionComponent).?;
 
                             if (wall.x == p_pos.x - 1 and wall.y == p_pos.y) {
@@ -310,7 +313,7 @@ const PlayerHudSystem = struct {
         const ui_y = 0;
         const hp_tag = "hp: ";
         screen.drawString(0, ui_y, hp_tag, pine.terminal.TermColor.fromRGB(
-            pine.terminal.colors.gray.rgb,
+            pine.terminal.colors.lighten(pine.terminal.colors.black.rgb, 0.2),
             pine.terminal.colors.black.rgb,
         ));
 
@@ -337,7 +340,7 @@ const PlayerHudSystem = struct {
                 ));
             } else {
                 screen.setCell(@as(u16, @intCast(hp_tag.len + i)), ui_y, hp_bar_symbol, pine.terminal.TermColor.fromRGB(
-                    pine.terminal.colors.dark_gray.rgb,
+                    pine.terminal.colors.lighten(pine.terminal.colors.black.rgb, 0.2),
                     pine.terminal.colors.black.rgb,
                 ));
             }
@@ -452,14 +455,14 @@ const LightingSystem = struct {
 
 const ShutdownSystem = struct {
     pub fn process(_: *ShutdownSystem, registry: *pine.ecs.Registry) anyerror!void {
-        var key_events = switch (try registry.queryResource(pine.terminal.KeyEvent)) {
+        var event_query = switch (try registry.queryResource(pine.terminal.KeyEvent)) {
             .collection => |col| col,
             .single => unreachable,
         };
-        defer key_events.deinit();
+        defer event_query.deinit();
 
-        while (key_events.next()) |event| {
-            switch (event) {
+        while (event_query.next()) |key_event| {
+            switch (key_event) {
                 .char => |c| if (c == 'q') try registry.pushResource(
                     pine.Message{ .shutdown = .requested },
                 ),
