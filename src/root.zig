@@ -6,7 +6,7 @@ pub const std_options = std.Options{
 
 // public exports //
 
-pub const log = @import("engine/log.zig");
+pub const log = @import("log.zig");
 
 // bundle pine modules with the pine engine
 pub const ecs = @import("pine-ecs");
@@ -20,7 +20,7 @@ pub const Message = message.Message;
 pub const Color = render.Color;
 
 // resources
-pub const WindowEvent = @import("engine/window.zig").WindowEvent;
+pub const WindowEvent = @import("window.zig").WindowEvent;
 pub const FrameCount = render.FrameCount;
 pub const FrameTime = render.FrameTime;
 pub const TimeNanos = time.TimeNanos;
@@ -30,23 +30,23 @@ pub const TimeSecs = time.TimeSecs;
 
 // components
 pub const component = struct {
-    pub const Window = @import("engine/window.zig").WindowComponent;
+    pub const Window = @import("window.zig").WindowComponent;
     pub const RenderTarget = render.RenderTargetComponent;
     pub const TermPosition = term.TermPositionComponent;
     pub const TermSprite = term.TermSpriteComponent;
 };
 
 // plugins
-pub const TimingPlugin = @import("engine/time.zig").TimingPlugin;
-pub const WindowPlugin = @import("engine/window.zig").WindowPlugin;
+pub const TimingPlugin = @import("time.zig").TimingPlugin;
+pub const WindowPlugin = @import("window.zig").WindowPlugin;
 pub const RenderPlugin = render.RenderPlugin;
 pub const RenderTerminalPlugin = term.RenderTerminalPlugin;
 
 // private imports //
 
 const std = @import("std");
-const app = @import("engine/app.zig");
-const message = @import("engine/message.zig");
-const render = @import("engine/render.zig");
-const time = @import("engine/time.zig");
-const term = @import("engine/terminal.zig");
+const app = @import("app.zig");
+const message = @import("message.zig");
+const render = @import("render.zig");
+const time = @import("time.zig");
+const term = @import("terminal.zig");
