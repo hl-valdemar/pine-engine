@@ -22,30 +22,30 @@ pub fn build(b: *std.Build) !void {
     });
 
     // create the library module
-    const pine_lib_mod = b.createModule(.{
+    const lib_mod = b.addModule("pine-engine", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    pine_lib_mod.addImport("pine-ecs", ecs_dep.module("pine-ecs"));
-    pine_lib_mod.addImport("pine-window", frame_dep.module("pine-window"));
-    pine_lib_mod.addImport("pine-graphics", frame_dep.module("pine-graphics"));
-    pine_lib_mod.addImport("pine-terminal", term_dep.module("pine-terminal"));
-    pine_lib_mod.addImport("zm", zm_dep.module("zm"));
+    lib_mod.addImport("pine-ecs", ecs_dep.module("pine-ecs"));
+    lib_mod.addImport("pine-window", frame_dep.module("pine-window"));
+    lib_mod.addImport("pine-graphics", frame_dep.module("pine-graphics"));
+    lib_mod.addImport("pine-terminal", term_dep.module("pine-terminal"));
+    lib_mod.addImport("zm", zm_dep.module("zm"));
 
     // create static library
     const pine_lib = b.addLibrary(.{
         .linkage = .static,
         .name = "pine-engine",
-        .root_module = pine_lib_mod,
+        .root_module = lib_mod,
     });
 
     b.installArtifact(pine_lib);
 
     // tests steps
     const lib_unit_tests = b.addTest(.{
-        .root_module = pine_lib_mod,
+        .root_module = lib_mod,
     });
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
@@ -71,7 +71,7 @@ pub fn build(b: *std.Build) !void {
         &.{
             .{
                 .name = "pine-engine",
-                .module = pine_lib_mod,
+                .module = lib_mod,
             },
         },
         .{

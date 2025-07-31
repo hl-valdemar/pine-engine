@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const ecs = @import("pine-ecs");
+const pecs = @import("pine-ecs");
 
 const log = @import("log.zig");
 const Message = @import("message.zig").Message;
@@ -22,7 +22,7 @@ pub const AppDesc = struct {
 pub const App = struct {
     allocator: Allocator,
     config: AppDesc,
-    registry: ecs.Registry,
+    registry: pecs.Registry,
 
     pub fn init(allocator: Allocator, config: AppDesc) !App {
         log.info("booting kernel...", .{});
@@ -30,7 +30,7 @@ pub const App = struct {
         var app = App{
             .allocator = allocator,
             .config = config,
-            .registry = try ecs.Registry.init(allocator, .{
+            .registry = try pecs.Registry.init(allocator, .{
                 .destroy_empty_archetypes = config.destroy_empty_archetypes,
             }),
         };
@@ -135,12 +135,12 @@ pub const App = struct {
     ///     Health{ .current = 3, .max = 5 },
     /// });
     /// ```
-    pub fn spawn(self: *App, components: anytype) !ecs.EntityID {
+    pub fn spawn(self: *App, components: anytype) !pecs.EntityID {
         return try self.registry.spawn(components);
     }
 
     /// Register a resource in the app.
-    pub fn registerResource(self: *App, comptime R: type, kind: ecs.ResourceKind) !void {
+    pub fn registerResource(self: *App, comptime R: type, kind: pecs.ResourceKind) !void {
         try self.registry.registerResource(R, kind);
     }
 
@@ -168,15 +168,15 @@ pub const App = struct {
     ///
     /// app.addPlugin(HealthPlugin);
     /// ```
-    pub fn addPlugin(self: *App, plugin: ecs.Plugin) !void {
+    pub fn addPlugin(self: *App, plugin: pecs.Plugin) !void {
         try self.registry.addPlugin(plugin);
     }
 
-    pub fn addStage(self: *App, name: []const u8, config: ecs.StageConfig) !void {
+    pub fn addStage(self: *App, name: []const u8, config: pecs.StageConfig) !void {
         try self.registry.addStage(name, config);
     }
 
-    pub fn getStage(self: *App, name: []const u8) ?*ecs.Stage {
+    pub fn getStage(self: *App, name: []const u8) ?*pecs.Stage {
         return self.registry.getStage(name);
     }
 
@@ -187,7 +187,7 @@ pub const App = struct {
     pub fn hasStages(
         self: *App,
         stage_names: []const []const u8,
-        operation: ecs.Pipeline.BooleanOperation,
+        operation: pecs.Pipeline.BooleanOperation,
     ) bool {
         return self.registry.hasStages(stage_names, operation);
     }
@@ -230,14 +230,14 @@ pub const App = struct {
     pub fn stagesEmpty(
         self: *App,
         stage_names: []const []const u8,
-        operation: ecs.Pipeline.BooleanOperation,
+        operation: pecs.Pipeline.BooleanOperation,
     ) bool {
         return self.registry.stagesEmpty(stage_names, operation);
     }
 };
 
 const MessageClearingSystem = struct {
-    pub fn process(_: *MessageClearingSystem, registry: *ecs.Registry) anyerror!void {
+    pub fn process(_: *MessageClearingSystem, registry: *pecs.Registry) anyerror!void {
         try registry.clearResource(Message);
     }
 };
