@@ -77,8 +77,8 @@ pub const RenderPlugin = ecs.Plugin.init("render", struct {
             try registry.clearResource(FrameTime);
 
             var frame_time_secs: f64 = 0;
+            const start_time_nanos = std.time.nanoTimestamp();
             { // frame scope
-                const start_time_nanos = std.time.nanoTimestamp();
                 defer { // execute at end of frame scope
                     frame_time_secs = elapsedTimeSecs(start_time_nanos);
                     self.frame_count += 1;
