@@ -52,6 +52,10 @@
             .url = "git+https://github.com/hl-valdemar/pine-terminal#72826a78ae26c9aae66224026b31bd3dda48033f",
             .hash = "pine_terminal-0.0.0-engfSSaMAADyOu3XuS1y6Oeevf5EnehSfvs3MvJTOFo2",
         },
+        .pecs = .{
+            .url = "git+https://github.com/hl-valdemar/pine-ecs#64e5509722312be85b20cb32582bbb8f125248d1",
+            .hash = "pine_ecs-0.4.0-4KYRKO1nAQDdJ3W0AsivdCLLpE2wFTLI14YS1o1sfdLk",
+        },
     },
     .paths = .{
         "build.zig",
