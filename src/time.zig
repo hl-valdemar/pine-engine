@@ -31,13 +31,20 @@ pub const TimingPlugin = ecs.Plugin.init("timing", struct {
             .value = start_time_nanos,
         });
         try registry.pushResource(TimeMicros{
-            .value = @intCast(@divTrunc(start_time_nanos, 1_000)),
+            .value = @intCast(@divTrunc(
+                start_time_nanos,
+                1_000,
+            )),
         });
         try registry.pushResource(TimeMillis{
-            .value = @intCast(@divTrunc(start_time_nanos, 1_000_000)),
+            .value = @intCast(@divTrunc(
+                start_time_nanos,
+                1_000_000,
+            )),
         });
         try registry.pushResource(TimeSecs{
-            .value = @as(f64, @floatFromInt(elapsedTimeNanos(start_time_nanos))) / 1_000_000_000.0,
+            .value = @as(f64, @floatFromInt(elapsedTimeNanos(start_time_nanos))) /
+                1_000_000_000.0,
         });
 
         // register systems
@@ -97,13 +104,20 @@ pub fn elapsedTimeNanos(start_time_nanos: i128) i128 {
 }
 
 pub fn elapsedTimeMicros(start_time_nanos: i128) i64 {
-    return @intCast(@divTrunc(elapsedTimeNanos(start_time_nanos), 1_000));
+    return @intCast(@divTrunc(
+        elapsedTimeNanos(start_time_nanos),
+        1_000,
+    ));
 }
 
 pub fn elapsedTimeMillis(start_time_nanos: i128) i64 {
-    return @intCast(@divTrunc(elapsedTimeNanos(start_time_nanos), 1_000_000));
+    return @intCast(@divTrunc(
+        elapsedTimeNanos(start_time_nanos),
+        1_000_000,
+    ));
 }
 
 pub fn elapsedTimeSecs(start_time_nanos: i128) f64 {
-    return @as(f64, @floatFromInt(elapsedTimeNanos(start_time_nanos))) / 1_000_000_000.0;
+    return @as(f64, @floatFromInt(elapsedTimeNanos(start_time_nanos))) /
+        1_000_000_000.0;
 }
