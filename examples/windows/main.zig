@@ -129,12 +129,12 @@ const InputSystem = struct {
                             std.log.debug("enter was 'just' released, spawning window! [{any}]", .{event});
 
                             // random width and height for endless fun
-                            const width = rand.intRangeAtMost(u16, 250, 750);
-                            const height = rand.intRangeAtMost(u16, 250, 750);
+                            const width: f64 = @floatFromInt(rand.intRangeAtMost(u16, 250, 750));
+                            const height: f64 = @floatFromInt(rand.intRangeAtMost(u16, 250, 750));
 
                             // why not make the position random as well
-                            const x = rand.intRangeAtMost(u16, 250, 750);
-                            const y = rand.intRangeAtMost(u16, 250, 750);
+                            const x: f64 = @floatFromInt(rand.intRangeAtMost(u16, 250, 750));
+                            const y: f64 = @floatFromInt(rand.intRangeAtMost(u16, 250, 750));
 
                             // create the window
                             var window = try pine.component.Window.init(.{
